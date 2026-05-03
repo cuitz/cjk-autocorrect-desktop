@@ -97,7 +97,7 @@ impl AppConfig {
         match serde_json::from_str(&content) {
             Ok(config) => Ok(config),
             Err(e) => {
-                tracing::warn!("Config file corrupted, falling back to default: {}", e);
+                eprintln!("Config file corrupted, falling back to default: {}", e);
                 let default = Self::default();
                 let _ = default.save();
                 Ok(default)
