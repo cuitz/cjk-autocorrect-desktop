@@ -124,15 +124,40 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // --- Global shortcut ---
+            // --- Global shortcut --- format clipboard & show window
             let shortcut_str = shortcut::normalize_shortcut(&app_config.shortcut);
             app.manage(AppRuntimeState::new(app_config.close_to_tray));
 
             {
                 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+                use tauri_plugin_clipboard_manager::ClipboardExt;
+                use crate::services::formatter::FormatterService;
+                use crate::commands::clipboard::ClipboardFormatEvent;
+
                 let gs = app.global_shortcut();
                 gs.on_shortcut(shortcut_str.as_str(), move |app, _shortcut, event| {
                     if event.state == ShortcutState::Pressed {
+                        // Format clipboard content
+                        if let Ok(text) = app.clipboard().read_text() {
+                            if !text.trim().is_empty() {
+                                let original = text.clone();
+                                let service = FormatterService::new();
+                                let request = crate::dto::FormatTextDto {
+                                    text,
+                                    mode: Some("standard".to_string()),
+                                };
+                                if let Ok(result) = service.format(request) {
+                                    let _ = app.clipboard().write_text(&result.formatted_text);
+                                    let _ = app.emit("clipboard-formatted", ClipboardFormatEvent {
+                                        original_text: original,
+                                        formatted_text: result.formatted_text,
+                                        changed: result.changed,
+                                    });
+                                }
+                            }
+                        }
+
+                        // Show and focus main window
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.set_focus();
@@ -169,6 +194,7 @@ pub fn run() {
             app_config::save_config,
             clipboard::read_clipboard,
             clipboard::write_clipboard,
+            clipboard::format_clipboard,
             history_cmd::get_history,
             history_cmd::clear_history,
             engine_cmd::check_engine,

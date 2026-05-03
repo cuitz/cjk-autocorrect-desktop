@@ -1,16 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FormatPage } from "./components/FormatPage";
 import { SettingsPage } from "./components/SettingsPage";
 import { HistoryPage } from "./components/HistoryPage";
 import { useConfigStore } from "./stores/config";
+import { useFormatStore } from "./stores/format";
 import { listen } from "@tauri-apps/api/event";
-import { resolveLocale } from "./i18n";
+import { resolveLocale, useI18n } from "./i18n";
 
 type Route = "format" | "settings" | "history";
 
 function App() {
   const [route, setRoute] = useState<Route>("format");
   const { config, load } = useConfigStore();
+  const populateFromClipboard = useFormatStore((s) => s.populateFromClipboard);
+  const [clipboardToast, setClipboardToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const { t } = useI18n();
 
   // Load config on mount to determine theme
   useEffect(() => {
@@ -55,6 +60,28 @@ function App() {
   }, [config?.language]);
 
   useEffect(() => {
+    const unlisten = listen<{
+      original_text: string;
+      formatted_text: string;
+      changed: boolean;
+    }>("clipboard-formatted", (event) => {
+      const { original_text, formatted_text, changed } = event.payload;
+      populateFromClipboard(original_text, formatted_text, changed);
+      const msg = changed
+        ? t("format.clipboardChanged")
+        : t("format.clipboardNoChange");
+      setClipboardToast(msg);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setClipboardToast(null), 2000);
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, [t, populateFromClipboard]);
+
+  useEffect(() => {
     const unlisten = listen<string>("navigate", (event) => {
       if (event.payload === "/settings") {
         setRoute("settings");
@@ -80,6 +107,11 @@ function App() {
   return (
     <div className="flex flex-col h-screen">
       {renderPage()}
+      {clipboardToast && (
+        <div className="toast toast-success" role="status">
+          {clipboardToast}
+        </div>
+      )}
     </div>
   );
 }

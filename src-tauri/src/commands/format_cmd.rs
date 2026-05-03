@@ -26,18 +26,20 @@ pub async fn format_text(mut request: FormatTextDto) -> Result<FormatResultDto, 
 
     // Save to history if enabled and text changed
     if config.as_ref().is_some_and(|c| c.history_enabled) && result.changed {
-        let limit = config
-            .as_ref()
-            .map(|c| c.history_limit as usize)
-            .unwrap_or(500);
         let store = HistoryStore::new()?;
-        let item = create_history_item(
-            &result.original_text,
-            &result.formatted_text,
-            &mode_str,
-            result.changed,
-        );
-        let _ = store.append(&item, limit);
+        if !store.is_duplicate_of_last(&result.original_text, &result.formatted_text)? {
+            let limit = config
+                .as_ref()
+                .map(|c| c.history_limit as usize)
+                .unwrap_or(500);
+            let item = create_history_item(
+                &result.original_text,
+                &result.formatted_text,
+                &mode_str,
+                result.changed,
+            );
+            let _ = store.append(&item, limit);
+        }
     }
 
     Ok(result)

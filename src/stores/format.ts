@@ -12,6 +12,7 @@ interface FormatState {
   setMode: (mode: string) => void;
   setError: (error: string) => void;
   restoreFromHistory: (item: HistoryItem) => void;
+  populateFromClipboard: (original: string, formatted: string, changed: boolean) => void;
   format: () => Promise<void>;
   clear: () => void;
   clearError: () => void;
@@ -38,6 +39,20 @@ export const useFormatStore = create<FormatState>((set, get) => ({
         elapsed_ms: 0,
       },
       mode: "standard",
+      isFormatting: false,
+      error: null,
+    }),
+
+  populateFromClipboard: (original, formatted, changed) =>
+    set({
+      inputText: original,
+      result: {
+        original_text: original,
+        formatted_text: formatted,
+        changed,
+        diagnostics: [],
+        elapsed_ms: 0,
+      },
       isFormatting: false,
       error: null,
     }),

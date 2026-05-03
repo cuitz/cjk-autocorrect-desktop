@@ -124,6 +124,15 @@ impl HistoryStore {
         }
         Ok(())
     }
+
+    /// Check whether the last entry in history has the same original and formatted text.
+    pub fn is_duplicate_of_last(&self, original: &str, formatted: &str) -> Result<bool, AppError> {
+        let items = self.list_raw()?;
+        if let Some(last) = items.last() {
+            return Ok(last.original_text == original && last.formatted_text == formatted);
+        }
+        Ok(false)
+    }
 }
 
 /// Monotonic counter used to guarantee unique history IDs even when multiple

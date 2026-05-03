@@ -78,3 +78,7 @@ export interface EngineStatus {
 export async function checkEngine(): Promise<EngineStatus> {
   return invoke("check_engine");
 }
+
+export async function formatClipboard(): Promise<void> {
+  return invoke("format_clipboard");
+}
