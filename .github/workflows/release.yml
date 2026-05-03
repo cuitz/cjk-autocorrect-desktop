@@ -57,5 +57,5 @@ jobs:
             Install the local `autocorrect` CLI before using the app.
 
             See README for installation and usage details.
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
