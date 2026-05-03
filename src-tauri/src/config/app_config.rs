@@ -12,7 +12,7 @@ pub enum ThemeMode {
     Dark,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum LanguageMode {
     #[default]
     System,

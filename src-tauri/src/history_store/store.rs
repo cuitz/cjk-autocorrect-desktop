@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::errors::AppError;
 
@@ -86,16 +86,22 @@ impl HistoryStore {
     }
 }
 
+/// Monotonic counter used to guarantee unique history IDs even when multiple
+/// items are created within the same millisecond.
+static HISTORY_COUNTER: AtomicU64 = AtomicU64::new(0);
+
 pub fn create_history_item(
     original: &str,
     formatted: &str,
     mode: &str,
     changed: bool,
 ) -> HistoryItem {
-    let id = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis().to_string())
-        .unwrap_or_else(|_| "0".to_string());
+    let count = HISTORY_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let id = format!(
+        "{}-{}",
+        chrono::Local::now().timestamp_millis(),
+        count
+    );
 
     let created_at = chrono::Local::now().to_rfc3339();
 

@@ -4,6 +4,7 @@ use crate::config::app_config::AppConfig;
 use crate::dto::{AppConfigDto, AppConfigResponseDto};
 use crate::errors::AppError;
 use crate::state::AppRuntimeState;
+use crate::update_tray_menu_language;
 use std::sync::atomic::Ordering;
 
 #[tauri::command]
@@ -71,6 +72,11 @@ pub async fn save_config(app: tauri::AppHandle, config: AppConfigDto) -> Result<
     app.state::<AppRuntimeState>()
         .close_to_tray
         .store(app_config.close_to_tray, Ordering::Relaxed);
+
+    // 3. Update tray menu language if it changed
+    if app_config.language != previous_config.language {
+        update_tray_menu_language(&app, &app_config.language);
+    }
 
     app_config.save()?;
 
