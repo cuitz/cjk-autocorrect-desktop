@@ -74,13 +74,14 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
   const hasFilter = query.trim().length > 0 || modeFilter !== "all";
 
   return (
-    <div className="app-shell">
+    <div className="app-shell page-enter">
       {/* Header */}
       <div className="app-toolbar">
         <div className="toolbar-brand">
           <button
             onClick={onBack}
             className="tool-button"
+            aria-label={t("common.back")}
           >
             {t("common.back")}
           </button>
@@ -94,6 +95,7 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
           <button
             onClick={() => load(100)}
             className="tool-button"
+            aria-label={t("common.refresh")}
           >
             {t("common.refresh")}
           </button>
@@ -101,6 +103,7 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
             onClick={handleClear}
             disabled={items.length === 0}
             className="tool-button tool-button-danger"
+            aria-label={t("common.clear")}
           >
             {t("common.clear")}
           </button>
@@ -142,11 +145,13 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
       {/* Content */}
       <div className="content-area content-area-scroll">
         {isLoading ? (
-          <div className="flex items-center justify-center h-32">
-            <span className="text-[13px] text-text-tertiary">{t("common.loading")}</span>
+          <div className="space-y-2 py-1">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="skeleton h-20 w-full" />
+            ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 gap-1">
+          <div className="flex flex-col items-center justify-center h-32 gap-2">
             <span className="text-[13px] text-text-tertiary">{t("history.empty")}</span>
             <span className="text-[11px] text-text-tertiary opacity-60">
               {t("history.emptyHint")}
@@ -454,13 +459,14 @@ function Toast({
   onClose: () => void;
 }) {
   return (
-    <div className={`toast ${tone === "danger" ? "toast-danger" : "toast-success"}`}>
+    <div className={`toast ${tone === "danger" ? "toast-danger" : "toast-success"}`} role="alert">
       <span>{message}</span>
       <button
         onClick={onClose}
         className="ml-1 text-white/60 hover:text-white transition-colors"
+        aria-label="Close"
       >
-        ✕
+        &#x2715;
       </button>
     </div>
   );

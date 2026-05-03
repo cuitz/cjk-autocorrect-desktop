@@ -2,7 +2,7 @@ import { useFormatStore } from "../stores/format";
 import { useEngineStore } from "../stores/engine";
 import { useConfigStore } from "../stores/config";
 import { readClipboard, writeClipboard } from "../lib/commands";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import appIcon from "../../src-tauri/icons/128x128.png";
 import { useI18n } from "../i18n";
 
@@ -28,6 +28,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
   const { status: engineStatus, check: checkEngine } = useEngineStore();
   const { config } = useConfigStore();
   const { t } = useI18n();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const toastError =
     error === "EMPTY_INPUT"
       ? t("format.emptyInput")
@@ -41,6 +42,10 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
   useEffect(() => {
     checkEngine();
   }, [checkEngine]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (config?.formatter.mode === "strict") {
@@ -87,7 +92,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
   };
 
   return (
-    <div className="app-shell">
+    <div className="app-shell page-enter">
       {/* Toolbar */}
       <div className="app-toolbar">
         <div className="toolbar-brand">
@@ -103,9 +108,11 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
         </div>
         <div className="toolbar-actions">
           {/* Mode selector — segmented control */}
-          <div className="segmented-control">
+          <div className="segmented-control" role="radiogroup" aria-label={t("settings.formatMode")}>
             <button
               onClick={() => setMode("standard")}
+              role="radio"
+              aria-checked={mode === "standard"}
               className={`segmented-option ${mode === "standard" ? "segmented-option-active" : ""}`}
             >
               {t("common.standard")}
@@ -125,6 +132,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
           <button
             onClick={handlePaste}
             className="tool-button"
+            aria-label={t("format.paste")}
           >
             {t("format.paste")}
           </button>
@@ -132,19 +140,28 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
             onClick={handleFormat}
             disabled={isFormatting || !inputText.trim()}
             className="tool-button tool-button-primary"
+            aria-label={isFormatting ? t("format.formatting") : t("format.format")}
+            aria-busy={isFormatting}
           >
-            {isFormatting ? t("format.formatting") : t("format.format")}
+            {isFormatting ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                {t("format.formatting")}
+              </>
+            ) : t("format.format")}
           </button>
           <button
             onClick={handleCopy}
             disabled={!result?.formatted_text}
             className="tool-button"
+            aria-label={t("format.copy")}
           >
             {t("format.copy")}
           </button>
           <button
             onClick={clear}
             className="tool-button"
+            aria-label={t("format.clear")}
           >
             {t("format.clear")}
           </button>
@@ -155,6 +172,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
             onClick={() => onNavigate("history")}
             className="tool-button"
             title={t("common.history")}
+            aria-label={t("common.history")}
           >
             {t("format.history")}
           </button>
@@ -162,6 +180,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
             onClick={() => onNavigate("settings")}
             className="tool-button"
             title={t("common.settings")}
+            aria-label={t("common.settings")}
           >
             {t("format.settings")}
           </button>
@@ -176,16 +195,18 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
             <span className="panel-label">
               {t("format.input")}
             </span>
-            <span className="meta-text">
+            <span className="meta-text" aria-live="polite">
               {inputText.length > 0 ? `${inputText.length} ${t("format.chars")}` : ""}
             </span>
           </div>
           <textarea
+            ref={inputRef}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t("format.inputPlaceholder")}
             className="editor-textarea placeholder-text-tertiary"
+            aria-label={t("format.input")}
           />
         </div>
 
@@ -196,13 +217,19 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
               {t("format.output")}
             </span>
             {result && (
-              <span className="meta-text">
+              <span className="meta-text" aria-live="polite">
                 {result.formatted_text.length} {t("format.chars")}
               </span>
             )}
           </div>
-          <div className="editor-output selectable">
-            {result ? (
+          <div className="editor-output selectable" role="region" aria-label={t("format.output")}>
+            {isFormatting ? (
+              <div className="space-y-2 p-2">
+                <div className="skeleton h-3 w-3/4" />
+                <div className="skeleton h-3 w-1/2" />
+                <div className="skeleton h-3 w-5/6" />
+              </div>
+            ) : result ? (
               <pre className="whitespace-pre-wrap font-sans m-0">{result.formatted_text}</pre>
             ) : (
               <span className="empty-placeholder">
@@ -238,13 +265,14 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
 
       {/* Error toast */}
       {toastError && (
-        <div className="toast toast-danger">
+        <div className="toast toast-danger" role="alert">
           <span>{toastError}</span>
           <button
             onClick={clearError}
             className="ml-1 text-white/60 hover:text-white transition-colors"
+            aria-label={t("common.close")}
           >
-            ✕
+            &#x2715;
           </button>
         </div>
       )}

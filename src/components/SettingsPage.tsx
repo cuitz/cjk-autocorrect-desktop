@@ -82,13 +82,14 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
   const hasChanges = config && form && JSON.stringify(config) !== JSON.stringify(form);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell page-enter">
       {/* Header */}
       <div className="app-toolbar">
         <div className="toolbar-brand">
           <button
             onClick={onBack}
             className="tool-button"
+            aria-label={t("common.back")}
           >
             {t("common.back")}
           </button>
@@ -99,8 +100,15 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
           onClick={handleSave}
           disabled={isSaving || !hasChanges}
           className="tool-button tool-button-primary"
+          aria-label={isSaving ? t("common.saving") : t("common.save")}
+          aria-busy={isSaving}
         >
-          {isSaving ? t("common.saving") : t("common.save")}
+          {isSaving ? (
+            <>
+              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              {t("common.saving")}
+            </>
+          ) : t("common.save")}
         </button>
       </div>
 
@@ -208,17 +216,17 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
 
       {/* Error toast */}
       {error && (
-        <div className="toast toast-danger">
+        <div className="toast toast-danger" role="alert">
           <span>{error}</span>
-          <button onClick={clearError} className="ml-1 text-white/60 hover:text-white transition-colors">
-            ✕
+          <button onClick={clearError} className="ml-1 text-white/60 hover:text-white transition-colors" aria-label={t("common.close")}>
+            &#x2715;
           </button>
         </div>
       )}
 
       {/* Save success toast */}
       {showSaved && !error && (
-        <div className="toast toast-success">
+        <div className="toast toast-success" role="status">
           {t("settings.saved")}
         </div>
       )}
@@ -499,9 +507,12 @@ function ToggleField({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[13px] text-text-primary">{label}</span>
+      <span className="text-[13px] text-text-primary" id={`toggle-label-${label}`}>{label}</span>
       <button
         onClick={() => onChange(!checked)}
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={`toggle-label-${label}`}
         className={`relative w-9 h-[20px] rounded-full transition-colors duration-200 ${
           checked ? "bg-accent" : "bg-border"
         }`}

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* 
+/*
   Design tokens — Stone/Indigo palette
   Refined industrial feel: warm neutral surfaces + cool accent
 */
@@ -22,15 +22,20 @@
   --c-accent: #6366f1;
   --c-accent-hover: #4f46e5;
   --c-accent-subtle: #eef2ff;
-  /* Status */
-  --c-success: #22c55e;
+  /* Status — darkened for 4.5:1 contrast on white text (toast) */
+  --c-success: #16a34a;
   --c-success-subtle: #f0fdf4;
   --c-warning: #f59e0b;
   --c-warning-subtle: #fffbeb;
-  --c-danger: #ef4444;
+  --c-danger: #dc2626;
   --c-danger-subtle: #fef2f2;
+  /* Shadows */
   --shadow-panel: 0 1px 2px rgba(28, 25, 23, 0.05), 0 8px 24px rgba(28, 25, 23, 0.04);
   --shadow-popover: 0 18px 48px rgba(28, 25, 23, 0.18);
+  /* Motion */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark {
@@ -39,7 +44,7 @@
   --c-surface-elevated: #1f1f23;
   --c-surface-inset: #131316;
   /* Borders */
-  --c-border: #2e2e33;
+  --c-border: #3a3a40;
   --c-border-subtle: #27272a;
   /* Text */
   --c-text-primary: #fafaf9;
@@ -53,6 +58,7 @@
   --c-success-subtle: #052e16;
   --c-warning-subtle: #422006;
   --c-danger-subtle: #450a0a;
+  /* Shadows */
   --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.28), 0 12px 28px rgba(0, 0, 0, 0.18);
   --shadow-popover: 0 22px 56px rgba(0, 0, 0, 0.45);
 }
@@ -77,10 +83,24 @@
   --color-danger-subtle: var(--c-danger-subtle);
 }
 
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Base ── */
+
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Noto Sans SC", "PingFang SC", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
 }
 
 .dark {
@@ -94,6 +114,7 @@ body {
   user-select: none;
   background: var(--c-surface);
   color: var(--c-text-primary);
+  transition: background-color 0.2s var(--ease-standard), color 0.2s var(--ease-standard);
 }
 
 button, input, textarea {
@@ -118,7 +139,8 @@ textarea, .selectable {
   -webkit-user-select: text;
 }
 
-/* Custom scrollbar */
+/* ── Custom scrollbar ── */
+
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -137,12 +159,28 @@ textarea, .selectable {
   background: var(--c-text-tertiary);
 }
 
-/* Focus ring */
+/* ── Focus ring ── */
+
 *:focus-visible {
   outline: 2px solid var(--c-accent);
-  outline-offset: 1px;
+  outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ── Skeleton loading ── */
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.skeleton {
+  background: var(--c-surface-inset);
+  border-radius: 7px;
+  animation: skeleton-pulse 1.5s var(--ease-standard) infinite;
+}
+
+/* ── App Shell ── */
 
 .app-shell {
   display: flex;
@@ -151,6 +189,8 @@ textarea, .selectable {
   min-height: 0;
   background: var(--c-surface);
 }
+
+/* ── Toolbar ── */
 
 .app-toolbar {
   height: 44px;
@@ -188,6 +228,7 @@ textarea, .selectable {
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
+  user-select: none;
 }
 
 .toolbar-subtitle {
@@ -202,6 +243,8 @@ textarea, .selectable {
   background: var(--c-border);
   margin: 0 2px;
 }
+
+/* ── Buttons ── */
 
 .tool-button {
   min-height: 28px;
@@ -218,7 +261,11 @@ textarea, .selectable {
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition: background-color 0.15s var(--ease-standard),
+              border-color 0.15s var(--ease-standard),
+              color 0.15s var(--ease-standard),
+              opacity 0.1s var(--ease-standard);
+  position: relative;
 }
 
 .tool-button:hover {
@@ -226,13 +273,13 @@ textarea, .selectable {
   color: var(--c-text-primary);
 }
 
-.tool-button:active {
-  transform: scale(0.98);
+.tool-button:active:not(:disabled) {
+  opacity: 0.75;
 }
 
 .tool-button:disabled {
   cursor: not-allowed;
-  opacity: 0.42;
+  opacity: 0.38;
 }
 
 .tool-button-primary {
@@ -244,6 +291,11 @@ textarea, .selectable {
 .tool-button-primary:hover {
   background: var(--c-accent-hover);
   color: #ffffff;
+}
+
+.tool-button-primary:active:not(:disabled) {
+  background: var(--c-accent-hover);
+  opacity: 0.85;
 }
 
 .tool-button-danger {
@@ -266,6 +318,8 @@ textarea, .selectable {
   color: #ffffff;
 }
 
+/* ── Segmented Control ── */
+
 .segmented-control {
   display: inline-flex;
   align-items: center;
@@ -286,7 +340,9 @@ textarea, .selectable {
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
-  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.15s var(--ease-standard),
+              color 0.15s var(--ease-standard),
+              box-shadow 0.15s var(--ease-standard);
 }
 
 .segmented-option:hover {
@@ -309,6 +365,8 @@ textarea, .selectable {
   background: transparent;
 }
 
+/* ── Content area ── */
+
 .content-area {
   flex: 1;
   min-height: 0;
@@ -320,12 +378,15 @@ textarea, .selectable {
   overflow: auto;
 }
 
+/* ── Panels ── */
+
 .panel {
   background: var(--c-surface-elevated);
   border: 1px solid var(--c-border);
   border-radius: 10px;
   box-shadow: var(--shadow-panel);
   overflow: hidden;
+  transition: border-color 0.2s var(--ease-standard);
 }
 
 .panel-header {
@@ -352,6 +413,8 @@ textarea, .selectable {
   font-size: 11px;
 }
 
+/* ── Form fields ── */
+
 .field-control {
   width: 100%;
   min-height: 32px;
@@ -361,11 +424,13 @@ textarea, .selectable {
   background: var(--c-surface-elevated);
   color: var(--c-text-primary);
   font-size: 13px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s var(--ease-standard),
+              box-shadow 0.2s var(--ease-standard);
 }
 
 .field-control::placeholder {
   color: var(--c-text-tertiary);
+  opacity: 0.65;
 }
 
 .field-control:focus,
@@ -374,6 +439,13 @@ textarea, .selectable {
   border-color: var(--c-accent);
   box-shadow: 0 0 0 3px var(--c-accent-subtle);
 }
+
+.field-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── Shortcut Recorder ── */
 
 .shortcut-recorder {
   display: flex;
@@ -442,6 +514,8 @@ textarea, .selectable {
   font-weight: 500;
 }
 
+/* ── Editor Panels ── */
+
 .editor-panel {
   display: flex;
   flex-direction: column;
@@ -474,13 +548,21 @@ textarea, .selectable {
   outline: none;
 }
 
+.editor-textarea::placeholder {
+  color: var(--c-text-tertiary);
+  opacity: 0.55;
+}
+
 .editor-output {
   overflow: auto;
 }
 
 .empty-placeholder {
   color: var(--c-text-tertiary);
+  opacity: 0.6;
 }
+
+/* ── Status Bar ── */
 
 .status-bar {
   height: 28px;
@@ -525,17 +607,23 @@ textarea, .selectable {
   color: var(--c-warning);
 }
 
+/* ── List Cards (History) ── */
+
 .list-card {
   background: var(--c-surface-elevated);
   border: 1px solid var(--c-border);
   border-radius: 10px;
   box-shadow: var(--shadow-panel);
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.2s var(--ease-standard),
+              box-shadow 0.2s var(--ease-standard);
 }
 
 .list-card:hover {
   border-color: color-mix(in srgb, var(--c-accent) 34%, var(--c-border));
+  box-shadow: 0 2px 4px rgba(28, 25, 23, 0.06), 0 8px 28px rgba(28, 25, 23, 0.06);
 }
+
+/* ── Modal ── */
 
 .modal-backdrop {
   position: absolute;
@@ -545,7 +633,8 @@ textarea, .selectable {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.45);
+  animation: fadeIn 0.15s var(--ease-out);
 }
 
 .modal-sheet {
@@ -559,6 +648,7 @@ textarea, .selectable {
   border-radius: 12px;
   box-shadow: var(--shadow-popover);
   overflow: hidden;
+  animation: modalSlideUp 0.2s var(--ease-out);
 }
 
 .modal-sheet-wide {
@@ -568,6 +658,8 @@ textarea, .selectable {
 .modal-body {
   padding: 16px;
 }
+
+/* ── Toast ── */
 
 .toast {
   position: absolute;
@@ -585,8 +677,9 @@ textarea, .selectable {
   border-radius: 9px;
   color: #ffffff;
   font-size: 12px;
+  font-weight: 500;
   box-shadow: var(--shadow-popover);
-  animation: fadeIn 0.15s ease-out;
+  animation: toastSlideUp 0.2s var(--ease-out);
 }
 
 .toast-success {
@@ -597,13 +690,28 @@ textarea, .selectable {
   background: var(--c-danger);
 }
 
-/* Smooth transitions for theme switch */
-html {
-  transition: background-color 0.15s ease, color 0.15s ease;
+/* ── Keyframes ── */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Keyframes */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+@keyframes toastSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: pageEnter 0.2s var(--ease-out);
 }
