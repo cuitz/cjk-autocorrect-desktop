@@ -74,6 +74,8 @@ pub struct AppConfigDto {
     #[serde(default = "default_language")]
     pub language: String,
     pub history_enabled: bool,
+    #[serde(default)]
+    pub diff_highlight: bool,
     pub formatter: FormatterConfigDto,
 }
 
@@ -85,6 +87,7 @@ pub struct AppConfigResponseDto {
     pub theme: String,
     pub language: String,
     pub history_enabled: bool,
+    pub diff_highlight: bool,
     pub formatter: FormatterConfigDto,
     pub version: u32,
 }
@@ -105,6 +108,7 @@ impl From<AppConfig> for AppConfigResponseDto {
             theme: format!("{:?}", config.theme).to_lowercase(),
             language: language_to_string(&config.language),
             history_enabled: config.history_enabled,
+            diff_highlight: config.diff_highlight,
             formatter: FormatterConfigDto {
                 mode: format!("{:?}", config.formatter.mode).to_lowercase(),
                 autocorrect_path: config.formatter.autocorrect_path,
@@ -136,6 +140,7 @@ impl From<AppConfigDto> for AppConfig {
             theme,
             language,
             history_enabled: dto.history_enabled,
+            diff_highlight: dto.diff_highlight,
             formatter: FormatterConfig {
                 mode: format_mode,
                 autocorrect_path: dto.formatter.autocorrect_path,

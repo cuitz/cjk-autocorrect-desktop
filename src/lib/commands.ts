@@ -20,6 +20,7 @@ export interface AppConfig {
   theme: string;
   language: string;
   history_enabled: boolean;
+  diff_highlight: boolean;
   formatter: {
     mode: string;
     autocorrect_path?: string | null;

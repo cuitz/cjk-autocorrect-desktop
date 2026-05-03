@@ -39,6 +39,8 @@ pub struct AppConfig {
     #[serde(default)]
     pub language: LanguageMode,
     pub history_enabled: bool,
+    #[serde(default)]
+    pub diff_highlight: bool,
     pub formatter: FormatterConfig,
     pub version: u32,
 }
@@ -52,6 +54,7 @@ impl Default for AppConfig {
             theme: ThemeMode::System,
             language: LanguageMode::System,
             history_enabled: true,
+            diff_highlight: false,
             formatter: FormatterConfig {
                 mode: FormatMode::Standard,
                 autocorrect_path: None,

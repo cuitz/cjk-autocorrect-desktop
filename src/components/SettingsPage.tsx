@@ -205,6 +205,11 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
               {t("settings.standardHelp")}
             </p>
           </Field>
+          <ToggleField
+            label={t("settings.diffHighlight")}
+            checked={form.diff_highlight}
+            onChange={(v) => updateForm({ diff_highlight: v })}
+          />
           <Field label={t("settings.formatEngine")}>
             <div className="engine-badge">
               <span className="status-dot status-dot-success" />

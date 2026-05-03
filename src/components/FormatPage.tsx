@@ -2,9 +2,10 @@ import { useFormatStore } from "../stores/format";
 import { useEngineStore } from "../stores/engine";
 import { useConfigStore } from "../stores/config";
 import { readClipboard, writeClipboard } from "../lib/commands";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import appIcon from "../../src-tauri/icons/128x128.png";
 import { useI18n } from "../i18n";
+import { diffChars } from "../lib/diff";
 
 interface FormatPageProps {
   onNavigate: (route: "format" | "settings" | "history") => void;
@@ -29,6 +30,11 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
   const { config } = useConfigStore();
   const { t } = useI18n();
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const diffSegments = useMemo(() => {
+    if (!result || !result.changed || !config?.diff_highlight) return null;
+    return diffChars(result.original_text, result.formatted_text);
+  }, [result, config?.diff_highlight]);
   const toastError =
     error === "EMPTY_INPUT"
       ? t("format.emptyInput")
@@ -230,7 +236,24 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
                 <div className="skeleton h-3 w-5/6" />
               </div>
             ) : result ? (
-              <pre className="whitespace-pre-wrap font-sans m-0">{result.formatted_text}</pre>
+              <pre className="whitespace-pre-wrap font-sans m-0">
+                {diffSegments ? (
+                  diffSegments.map((seg, i) => (
+                    <span
+                      key={i}
+                      className={
+                        seg.type === "add" ? "diff-add"
+                        : seg.type === "change" ? "diff-change"
+                        : ""
+                      }
+                    >
+                      {seg.text}
+                    </span>
+                  ))
+                ) : (
+                  result.formatted_text
+                )}
+              </pre>
             ) : (
               <span className="empty-placeholder">
                 {t("format.outputPlaceholder")}

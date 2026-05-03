@@ -690,6 +690,28 @@ textarea, .selectable {
   background: var(--c-danger);
 }
 
+/* ── Diff Highlight ── */
+
+.diff-add {
+  background: color-mix(in srgb, var(--c-success) 18%, transparent);
+  border-bottom: 2px solid var(--c-success);
+  border-radius: 2px;
+}
+
+.diff-change {
+  background: color-mix(in srgb, var(--c-warning) 22%, transparent);
+  border-bottom: 2px solid var(--c-warning);
+  border-radius: 2px;
+}
+
+.dark .diff-add {
+  background: color-mix(in srgb, var(--c-success) 28%, transparent);
+}
+
+.dark .diff-change {
+  background: color-mix(in srgb, var(--c-warning) 28%, transparent);
+}
+
 /* ── Keyframes ── */
 
 @keyframes fadeIn {
