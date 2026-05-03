@@ -27,7 +27,8 @@ impl HistoryStore {
         Ok(HistoryStore { path })
     }
 
-    pub fn append(&self, item: &HistoryItem) -> Result<(), AppError> {
+    /// Append an item and truncate the file to `limit` entries (newest kept).
+    pub fn append(&self, item: &HistoryItem, limit: usize) -> Result<(), AppError> {
         if !self.path.exists() {
             if let Some(parent) = self.path.parent() {
                 fs::create_dir_all(parent).map_err(|e| {
@@ -49,10 +50,46 @@ impl HistoryStore {
         writeln!(file, "{}", line)
             .map_err(|e| AppError::ConfigError(format!("Failed to write history item: {}", e)))?;
 
+        // Flush and drop before truncating
+        drop(file);
+
+        self.truncate(limit)
+    }
+
+    /// Keep only the newest `limit` entries and rewrite the file.
+    fn truncate(&self, limit: usize) -> Result<(), AppError> {
+        let items = self.list_raw()?;
+        if items.len() <= limit {
+            return Ok(());
+        }
+
+        // Keep the newest entries
+        let keep = &items[items.len() - limit..];
+
+        let tmp_path = self.path.with_extension("jsonl.tmp");
+        {
+            let mut file = File::create(&tmp_path).map_err(|e| {
+                AppError::ConfigError(format!("Failed to create temp history file: {}", e))
+            })?;
+            for item in keep {
+                let line = serde_json::to_string(item).map_err(|e| {
+                    AppError::ConfigError(format!("Failed to serialize history item: {}", e))
+                })?;
+                writeln!(file, "{}", line).map_err(|e| {
+                    AppError::ConfigError(format!("Failed to write temp history file: {}", e))
+                })?;
+            }
+        }
+
+        fs::rename(&tmp_path, &self.path).map_err(|e| {
+            AppError::ConfigError(format!("Failed to replace history file: {}", e))
+        })?;
+
         Ok(())
     }
 
-    pub fn list(&self, limit: Option<usize>) -> Result<Vec<HistoryItem>, AppError> {
+    /// Read all entries from the file (oldest-first order).
+    fn list_raw(&self) -> Result<Vec<HistoryItem>, AppError> {
         if !self.path.exists() {
             return Ok(Vec::new());
         }
@@ -61,19 +98,22 @@ impl HistoryStore {
             .map_err(|e| AppError::ConfigError(format!("Failed to open history file: {}", e)))?;
 
         let reader = BufReader::new(file);
-        let mut items: Vec<HistoryItem> = reader
+        let items: Vec<HistoryItem> = reader
             .lines()
             .map_while(Result::ok)
             .filter_map(|line| serde_json::from_str::<HistoryItem>(&line).ok())
             .collect();
 
-        // Most recent first
-        items.reverse();
+        Ok(items)
+    }
 
+    /// Return at most `limit` entries, newest first.
+    pub fn list(&self, limit: Option<usize>) -> Result<Vec<HistoryItem>, AppError> {
+        let mut items = self.list_raw()?;
+        items.reverse(); // newest first
         if let Some(limit) = limit {
             items.truncate(limit);
         }
-
         Ok(items)
     }
 

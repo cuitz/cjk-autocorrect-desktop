@@ -181,6 +181,21 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
             checked={form.history_enabled}
             onChange={(v) => updateForm({ history_enabled: v })}
           />
+          <Field label={t("settings.historyLimit")}>
+            <input
+              type="number"
+              min={100}
+              max={1000}
+              step={50}
+              value={form.history_limit}
+              onChange={(e) => {
+                const v = Math.max(100, Math.min(1000, Number(e.target.value) || 100));
+                updateForm({ history_limit: v });
+              }}
+              disabled={!form.history_enabled}
+              className="field-control"
+            />
+          </Field>
         </Section>
 
         {/* Formatter */}

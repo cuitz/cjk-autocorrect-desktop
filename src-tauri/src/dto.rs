@@ -75,6 +75,8 @@ pub struct AppConfigDto {
     pub language: String,
     pub history_enabled: bool,
     #[serde(default)]
+    pub history_limit: u32,
+    #[serde(default)]
     pub diff_highlight: bool,
     pub formatter: FormatterConfigDto,
 }
@@ -87,6 +89,7 @@ pub struct AppConfigResponseDto {
     pub theme: String,
     pub language: String,
     pub history_enabled: bool,
+    pub history_limit: u32,
     pub diff_highlight: bool,
     pub formatter: FormatterConfigDto,
     pub version: u32,
@@ -108,6 +111,7 @@ impl From<AppConfig> for AppConfigResponseDto {
             theme: format!("{:?}", config.theme).to_lowercase(),
             language: language_to_string(&config.language),
             history_enabled: config.history_enabled,
+            history_limit: config.history_limit,
             diff_highlight: config.diff_highlight,
             formatter: FormatterConfigDto {
                 mode: format!("{:?}", config.formatter.mode).to_lowercase(),
@@ -133,20 +137,23 @@ impl From<AppConfigDto> for AppConfig {
             _ => LanguageMode::System,
         };
         let format_mode = FormatMode::Standard;
-        AppConfig {
+        let mut app_config = AppConfig {
             shortcut: dto.shortcut,
             auto_start: dto.auto_start,
             close_to_tray: dto.close_to_tray,
             theme,
             language,
             history_enabled: dto.history_enabled,
+            history_limit: dto.history_limit,
             diff_highlight: dto.diff_highlight,
             formatter: FormatterConfig {
                 mode: format_mode,
                 autocorrect_path: dto.formatter.autocorrect_path,
             },
             version: 1,
-        }
+        };
+        app_config.clamp_history_limit();
+        app_config
     }
 }
 

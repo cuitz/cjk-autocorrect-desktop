@@ -39,6 +39,8 @@ pub struct AppConfig {
     #[serde(default)]
     pub language: LanguageMode,
     pub history_enabled: bool,
+    #[serde(default = "default_history_limit")]
+    pub history_limit: u32,
     #[serde(default)]
     pub diff_highlight: bool,
     pub formatter: FormatterConfig,
@@ -54,6 +56,7 @@ impl Default for AppConfig {
             theme: ThemeMode::System,
             language: LanguageMode::System,
             history_enabled: true,
+            history_limit: 500,
             diff_highlight: false,
             formatter: FormatterConfig {
                 mode: FormatMode::Standard,
@@ -118,5 +121,19 @@ impl AppConfig {
             .map_err(|e| AppError::ConfigError(format!("Failed to write config: {}", e)))?;
 
         Ok(())
+    }
+}
+
+const HISTORY_LIMIT_MIN: u32 = 100;
+const HISTORY_LIMIT_MAX: u32 = 1000;
+
+fn default_history_limit() -> u32 {
+    500
+}
+
+impl AppConfig {
+    /// Clamp history_limit to valid range [100, 1000].
+    pub fn clamp_history_limit(&mut self) {
+        self.history_limit = self.history_limit.clamp(HISTORY_LIMIT_MIN, HISTORY_LIMIT_MAX);
     }
 }
