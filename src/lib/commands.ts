@@ -22,7 +22,7 @@ export interface AppConfig {
   history_enabled: boolean;
   formatter: {
     mode: string;
-    autocorrect_path: string | null;
+    autocorrect_path?: string | null;
   };
   version: number;
 }

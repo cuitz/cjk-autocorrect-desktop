@@ -2,7 +2,7 @@ import { useFormatStore } from "../stores/format";
 import { useEngineStore } from "../stores/engine";
 import { useConfigStore } from "../stores/config";
 import { readClipboard, writeClipboard } from "../lib/commands";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import appIcon from "../../src-tauri/icons/128x128.png";
 import { useI18n } from "../i18n";
 
@@ -19,6 +19,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
     mode,
     setInputText,
     setMode,
+    setError,
     format,
     clear,
     clearError,
@@ -26,19 +27,31 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
 
   const { status: engineStatus, check: checkEngine } = useEngineStore();
   const { config } = useConfigStore();
-  const [showInstallHint, setShowInstallHint] = useState(false);
   const { t } = useI18n();
-  const displayError = error === "EMPTY_INPUT" ? t("format.emptyInput") : error;
+  const toastError =
+    error === "EMPTY_INPUT"
+      ? t("format.emptyInput")
+      : error === "STRICT_UNAVAILABLE"
+        ? t("format.strictUnavailable")
+        : error;
+  const formatShortcutHint = isMacLike()
+    ? t("format.copyShortcutMac")
+    : t("format.copyShortcutWindows");
 
   useEffect(() => {
     checkEngine();
   }, [checkEngine]);
 
   useEffect(() => {
+    if (config?.formatter.mode === "strict") {
+      if (mode !== "standard") setMode("standard");
+      return;
+    }
+
     if (config?.formatter.mode && config.formatter.mode !== mode) {
       setMode(config.formatter.mode);
     }
-  }, [config?.formatter.mode, setMode]);
+  }, [config?.formatter.mode, mode, setMode]);
 
   const handlePaste = async () => {
     try {
@@ -60,6 +73,10 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
 
   const handleFormat = () => {
     format();
+  };
+
+  const handleStrictUnavailable = () => {
+    setError("STRICT_UNAVAILABLE");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -94,8 +111,10 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
               {t("common.standard")}
             </button>
             <button
-              onClick={() => setMode("strict")}
-              className={`segmented-option ${mode === "strict" ? "segmented-option-active" : ""}`}
+              onClick={handleStrictUnavailable}
+              aria-disabled="true"
+              title={t("format.strictUnavailable")}
+              className="segmented-option segmented-option-disabled"
             >
               {t("common.strict")}
             </button>
@@ -210,31 +229,17 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
         </div>
         <div className="status-group">
           <span className="status-group">
-            {engineStatus?.autocorrect_installed ? (
-              <>
-                <span className="status-dot status-dot-success" />
-                <span>autocorrect</span>
-              </>
-            ) : (
-              <>
-                <span className="status-dot status-dot-danger" />
-                <button
-                  onClick={() => setShowInstallHint(true)}
-                  className="text-danger hover:underline"
-                >
-                  {t("format.engineMissing")}
-                </button>
-              </>
-            )}
+            <span className={engineStatus?.autocorrect_installed ? "status-dot status-dot-success" : "status-dot"} />
+            <span>{t("format.embeddedEngine")}</span>
           </span>
-          <span className="opacity-50">{t("format.copyShortcut")}</span>
+          <span className="opacity-50">{formatShortcutHint}</span>
         </div>
       </div>
 
       {/* Error toast */}
-      {displayError && (
+      {toastError && (
         <div className="toast toast-danger">
-          <span>{displayError}</span>
+          <span>{toastError}</span>
           <button
             onClick={clearError}
             className="ml-1 text-white/60 hover:text-white transition-colors"
@@ -244,37 +249,10 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
         </div>
       )}
 
-      {/* Install hint modal */}
-      {showInstallHint && (
-        <div className="modal-backdrop" onClick={() => setShowInstallHint(false)}>
-          <div
-            className="modal-sheet"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-body">
-              <h3 className="text-[14px] font-semibold text-text-primary mb-3">
-                {t("format.engineInstallTitle")}
-              </h3>
-              <p className="text-[13px] text-text-secondary leading-relaxed whitespace-pre-line mb-4">
-                {engineStatus?.autocorrect_installed
-                  ? t("format.engineInstallFallback")
-                  : t("format.engineInstallHint")}
-              </p>
-              <p className="text-[12px] text-text-tertiary mb-4">
-                {t("format.engineInstallBody")}
-              </p>
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setShowInstallHint(false)}
-                  className="tool-button tool-button-primary"
-                >
-                  {t("format.gotIt")}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
+}
+
+function isMacLike(): boolean {
+  return /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 }

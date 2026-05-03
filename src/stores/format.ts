@@ -10,6 +10,7 @@ interface FormatState {
 
   setInputText: (text: string) => void;
   setMode: (mode: string) => void;
+  setError: (error: string) => void;
   restoreFromHistory: (item: HistoryItem) => void;
   format: () => Promise<void>;
   clear: () => void;
@@ -25,6 +26,7 @@ export const useFormatStore = create<FormatState>((set, get) => ({
 
   setInputText: (text) => set({ inputText: text }),
   setMode: (mode) => set({ mode }),
+  setError: (error) => set({ error }),
   restoreFromHistory: (item) =>
     set({
       inputText: item.original_text,
@@ -35,7 +37,7 @@ export const useFormatStore = create<FormatState>((set, get) => ({
         diagnostics: [],
         elapsed_ms: 0,
       },
-      mode: item.mode === "strict" ? "strict" : "standard",
+      mode: "standard",
       isFormatting: false,
       error: null,
     }),

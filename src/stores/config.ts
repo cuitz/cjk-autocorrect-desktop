@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { loadConfig, saveConfig, type AppConfig } from "../lib/commands";
+import { normalizeCommandError } from "../lib/errors";
 
 interface ConfigState {
   config: AppConfig | null;
@@ -24,8 +25,9 @@ export const useConfigStore = create<ConfigState>((set) => ({
       const config = await loadConfig();
       set({ config, isLoading: false });
     } catch (err) {
+      const error = normalizeCommandError(err);
       set({
-        error: err instanceof Error ? err.message : String(err),
+        error: error.message,
         isLoading: false,
       });
     }
@@ -37,10 +39,12 @@ export const useConfigStore = create<ConfigState>((set) => ({
       await saveConfig(config);
       set({ config, isSaving: false });
     } catch (err) {
+      const error = normalizeCommandError(err);
       set({
-        error: err instanceof Error ? err.message : String(err),
+        error: error.message,
         isSaving: false,
       });
+      throw error;
     }
   },
 

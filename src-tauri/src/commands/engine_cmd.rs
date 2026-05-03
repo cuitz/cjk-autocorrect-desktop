@@ -4,26 +4,20 @@ use crate::services::formatter::FormatterService;
 
 #[derive(Debug, Serialize)]
 pub struct EngineStatusDto {
-    /// Whether autocorrect CLI is installed
+    /// Whether the embedded autocorrect engine is available.
     pub autocorrect_installed: bool,
-    /// Path to autocorrect binary, if found
+    /// Engine label kept in the legacy path field for frontend compatibility.
     pub autocorrect_path: Option<String>,
-    /// Installation hint if autocorrect is not installed
+    /// Installation hint if autocorrect is not available.
     pub install_hint: Option<String>,
 }
 
 #[tauri::command]
 pub async fn check_engine() -> EngineStatusDto {
-    // Load config to get custom autocorrect path
-    let config = crate::config::app_config::AppConfig::load().ok();
-    let custom_path = config
-        .as_ref()
-        .and_then(|c| c.formatter.autocorrect_path.clone());
-
-    let service = FormatterService::with_custom_path(custom_path);
+    let service = FormatterService::new();
     EngineStatusDto {
         autocorrect_installed: service.is_autocorrect_available(),
-        autocorrect_path: service.autocorrect_path().map(|s| s.to_string()),
+        autocorrect_path: Some(service.engine_name().to_string()),
         install_hint: service.install_hint(),
     }
 }

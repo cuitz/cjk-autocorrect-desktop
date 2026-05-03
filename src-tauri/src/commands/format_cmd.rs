@@ -5,13 +5,8 @@ use crate::services::formatter::FormatterService;
 
 #[tauri::command]
 pub async fn format_text(mut request: FormatTextDto) -> Result<FormatResultDto, AppError> {
-    // Load config to get custom autocorrect path
     let config = crate::config::app_config::AppConfig::load().ok();
-    let custom_path = config
-        .as_ref()
-        .and_then(|c| c.formatter.autocorrect_path.clone());
-
-    let service = FormatterService::with_custom_path(custom_path);
+    let service = FormatterService::new();
 
     let default_mode = config
         .as_ref()

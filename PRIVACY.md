@@ -21,7 +21,7 @@ The history file is stored as `history.jsonl` in the same app data directory.
 
 ## Network usage
 
-The app does not include telemetry, account login, cloud sync, or remote analytics. Formatting is performed by invoking the local `autocorrect` CLI through standard input.
+The app does not include telemetry, account login, cloud sync, or remote analytics. Formatting is performed locally with the bundled `autocorrect` Rust engine.
 
 ## Clipboard access
 
@@ -33,4 +33,4 @@ Only modified formatting results are saved to history. You can clear history fro
 
 ## Third-party dependency
 
-The formatting engine is the local `autocorrect` command-line tool. Please review the `autocorrect` project if you want to understand its behavior in detail.
+The formatting engine is the bundled `autocorrect` Rust crate. Please review the `autocorrect` project if you want to understand its behavior in detail.

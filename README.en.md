@@ -15,17 +15,17 @@
 
 ---
 
-CJK AutoCorrect Desktop is a local desktop client powered by the [autocorrect](https://github.com/huacnlee/autocorrect) engine. It formats Chinese, Japanese, and Korean text by adding spacing between CJK characters and Latin letters or numbers, normalizing punctuation, and letting you choose between standard and strict formatting modes.
+CJK AutoCorrect Desktop is a local desktop client powered by the bundled [autocorrect](https://github.com/huacnlee/autocorrect) Rust engine. It formats Chinese, Japanese, and Korean text by adding spacing between CJK characters and Latin letters or numbers, normalizing punctuation, and letting you choose between standard and strict formatting preferences.
 
 ## Features
 
 - **Local instant formatting** - Paste or type text, format it in one click, then copy or clear the result. `Cmd/Ctrl + Enter` also formats the current input.
-- **Standard / strict modes** - Standard mode handles common CJK typography fixes. Strict mode invokes `autocorrect --strict` for stricter rules.
+- **Standard / strict modes** - Standard mode handles common CJK typography fixes. Strict mode remains available as a default-mode preference and currently shares the embedded rule set.
 - **Default mode sync** - Choose the default formatting mode in Settings, and the main formatter view automatically follows that preference.
 - **Clipboard workflow** - Read text from the clipboard and write formatted output back to the clipboard.
 - **Global shortcut** - The default shortcut is `Cmd/Ctrl + Shift + F`, and custom shortcuts can be recorded from the Settings page.
 - **Enhanced history** - Only changed formatting results are saved. History supports search, mode filtering, result copy, restore to the main editor, detail view, and full clear.
-- **Engine detection and custom path** - The app auto-detects the local `autocorrect` CLI, with an optional manual binary path.
+- **Bundled formatting engine** - The `autocorrect` Rust crate ships with the app, so no external command-line tool is required.
 - **System integration** - System tray support, close-to-tray behavior, and optional launch at login.
 - **Appearance settings** - Light, dark, and system themes.
 
@@ -35,26 +35,7 @@ CJK AutoCorrect Desktop is a local desktop client powered by the [autocorrect](h
 
 ## Install and Use
 
-CJK AutoCorrect Desktop uses the local `autocorrect` CLI as its formatting engine.
-
-1. Download the installer for your platform from [Releases](../../releases).
-2. Install the local `autocorrect` CLI.
-3. Open the app and make sure the bottom status bar shows that `autocorrect` is available.
-
-You can open the app and Settings without `autocorrect`, but formatting requires the CLI to be installed. After installing it, restart the app or set the `autocorrect` binary path manually in Settings.
-
-### Install autocorrect
-
-```bash
-# macOS
-brew install huacnlee/tap/autocorrect
-
-# Windows
-scoop install autocorrect
-
-# Or with Cargo
-cargo install autocorrect
-```
+Download the installer for your platform from [Releases](../../releases) and run it. The formatting engine is bundled with the app, so you do not need to install the `autocorrect` CLI separately.
 
 ## Development
 
@@ -63,7 +44,6 @@ cargo install autocorrect
 - [Node.js](https://nodejs.org/) >= 18
 - [pnpm](https://pnpm.io/) >= 8
 - [Rust](https://www.rust-lang.org/tools/install) >= 1.77
-- [autocorrect](https://github.com/huacnlee/autocorrect) >= 2.0, for local formatting tests
 
 ### Start the Dev App
 
@@ -99,7 +79,7 @@ Build artifacts are generated under `src-tauri/target/release/bundle/`.
 ├─────────────────────────────────────────────┤
 │                 Backend                      │
 │          Rust · FormatterEngine              │
-│        autocorrect CLI (stdin pipe)          │
+│        autocorrect Rust crate                │
 └─────────────────────────────────────────────┘
 ```
 
@@ -109,7 +89,7 @@ Build artifacts are generated under `src-tauri/target/release/bundle/`.
 | Styling | Tailwind CSS 4 | CSS variable driven Stone/Indigo design tokens |
 | Bridge | Tauri v2 Commands | Typed frontend/backend communication |
 | Backend | Rust | Formatting service, configuration, history storage, and app integration |
-| Engine | autocorrect CLI | Invoked through stdin/stdout |
+| Engine | autocorrect Rust crate | Embedded in the Tauri backend process |
 
 ### Project Structure
 
@@ -136,7 +116,7 @@ src-tauri/src/                # Backend source
 ├── config/app_config.rs      # AppConfig model and persistence
 ├── engine/
 │   ├── types.rs              # FormatMode and FormatterEngine trait
-│   └── autocorrect_cli.rs    # autocorrect CLI implementation
+│   └── embedded_autocorrect.rs # Embedded autocorrect implementation
 ├── services/formatter.rs     # Formatting service
 ├── history_store/store.rs    # JSONL history storage
 ├── dto.rs                    # Data transfer objects
@@ -149,7 +129,7 @@ src-tauri/src/                # Backend source
 | Mode | Description |
 |------|-------------|
 | **Standard** | Adds spacing between CJK text and Latin letters or numbers, and normalizes full-width/half-width punctuation |
-| **Strict** | Invokes `autocorrect --strict` and applies stricter rules on top of standard formatting |
+| **Strict** | Formats with the embedded autocorrect rules. It currently shares the same rule set as standard mode |
 
 ## Configuration
 
@@ -165,7 +145,7 @@ History is stored as `history.jsonl` in the same directory.
 
 CJK AutoCorrect Desktop is local-first and does not upload your text content.
 
-- Formatting is performed locally by the `autocorrect` CLI.
+- Formatting is performed locally by the bundled `autocorrect` Rust engine.
 - Clipboard read/write is triggered only by explicit user actions or formatting workflows.
 - History is stored only on your device as `history.jsonl`, and unchanged text is not written to history.
 - You can clear history from the app or delete the history file manually.

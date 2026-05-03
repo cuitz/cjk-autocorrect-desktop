@@ -128,10 +128,7 @@ impl From<AppConfigDto> for AppConfig {
             "ko" | "ko-KR" | "ko-kr" => LanguageMode::Ko,
             _ => LanguageMode::System,
         };
-        let format_mode = match dto.formatter.mode.as_str() {
-            "strict" => FormatMode::Strict,
-            _ => FormatMode::Standard,
-        };
+        let format_mode = FormatMode::Standard;
         AppConfig {
             shortcut: dto.shortcut,
             auto_start: dto.auto_start,

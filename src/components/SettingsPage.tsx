@@ -2,15 +2,17 @@ import { useEffect, useState, useRef } from "react";
 import { useConfigStore } from "../stores/config";
 import { useEngineStore } from "../stores/engine";
 import type { AppConfig } from "../lib/commands";
+import { normalizeCommandError } from "../lib/errors";
 import { type TranslationKey, useI18n } from "../i18n";
 
 export function SettingsPage({ onBack }: { onBack: () => void }) {
   const { config, isLoading, isSaving, error, load, save, clearError } = useConfigStore();
-  const { status: engineStatus, check: checkEngine } = useEngineStore();
+  const { check: checkEngine } = useEngineStore();
   const [form, setForm] = useState<AppConfig | null>(null);
   const [showSaved, setShowSaved] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [shortcutError, setShortcutError] = useState<string | null>(null);
+  const [modeError, setModeError] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const { t } = useI18n();
 
@@ -21,7 +23,13 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     if (config) {
-      setForm({ ...config });
+      setForm({
+        ...config,
+        formatter: {
+          ...config.formatter,
+          mode: config.formatter.mode === "strict" ? "standard" : config.formatter.mode,
+        },
+      });
     }
   }, [config]);
 
@@ -48,9 +56,11 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setShowSaved(false), 2000);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("ShortcutRegistration") || msg.includes("shortcut")) {
-        setShortcutError(t("settings.saveFailedShortcut", { shortcut: form.shortcut }));
+      const error = normalizeCommandError(err);
+      setShowSaved(false);
+      if (isShortcutRegistrationError(error)) {
+        setShortcutError(t("settings.shortcutConflict", { shortcut: formatShortcutForDisplay(form.shortcut) }));
+        clearError();
       }
     }
   };
@@ -63,6 +73,10 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
     setForm((prev) =>
       prev ? { ...prev, formatter: { ...prev.formatter, ...partial } } : prev
     );
+  };
+
+  const handleStrictUnavailable = () => {
+    setModeError(t("settings.strictUnavailable"));
   };
 
   const hasChanges = config && form && JSON.stringify(config) !== JSON.stringify(form);
@@ -107,7 +121,7 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
               }}
             />
             {shortcutError && (
-              <p className="mt-1 text-[12px] text-danger">{shortcutError}</p>
+              <p className="shortcut-error">{shortcutError}</p>
             )}
           </Field>
 
@@ -167,47 +181,27 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
             <SegmentedControl
               options={[
                 { value: "standard", label: t("common.standardMode") },
-                { value: "strict", label: t("common.strictMode") },
+                { value: "strict", label: t("common.strictMode"), disabled: true },
               ]}
               value={form.formatter.mode}
-              onChange={(v) => updateFormatter({ mode: v })}
+              onChange={(v) => {
+                setModeError(null);
+                updateFormatter({ mode: v });
+              }}
+              onDisabledClick={handleStrictUnavailable}
             />
+            {modeError && (
+              <p className="shortcut-error">{modeError}</p>
+            )}
             <p className="mt-1.5 text-[11px] text-text-tertiary leading-relaxed">
-              {form.formatter.mode === "standard"
-                ? t("settings.standardHelp")
-                : t("settings.strictHelp")}
+              {t("settings.standardHelp")}
             </p>
           </Field>
-          <Field label={t("settings.autocorrectPath")} hint={t("settings.autocorrectPathHint")}>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={form.formatter.autocorrect_path || ""}
-                onChange={(e) => updateFormatter({ autocorrect_path: e.target.value || null })}
-                placeholder={engineStatus?.autocorrect_path || t("settings.autocorrectPathPlaceholder")}
-                className="field-control flex-1 min-w-0"
-              />
-              {form.formatter.autocorrect_path && (
-                <button
-                  onClick={() => updateFormatter({ autocorrect_path: null })}
-                  className="tool-button"
-                  title={t("settings.clearCustomPath")}
-                >
-                  {t("settings.reset")}
-                </button>
-              )}
+          <Field label={t("settings.formatEngine")}>
+            <div className="engine-badge">
+              <span className="status-dot status-dot-success" />
+              <span>{t("settings.embeddedEngine")}</span>
             </div>
-            <p className="mt-1 text-[11px] text-text-tertiary leading-relaxed">
-              {engineStatus?.autocorrect_installed ? (
-                <span className="text-success">
-                  {t("settings.autocorrectDetected", { path: engineStatus.autocorrect_path || "" })}
-                </span>
-              ) : (
-                <span className="text-danger">
-                  {t("settings.autocorrectMissing")}
-                </span>
-              )}
-            </p>
           </Field>
         </Section>
       </div>
@@ -237,18 +231,22 @@ function SegmentedControl({
   options,
   value,
   onChange,
+  onDisabledClick,
 }: {
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; disabled?: boolean }[];
   value: string;
   onChange: (v: string) => void;
+  onDisabledClick?: (v: string) => void;
 }) {
   return (
     <div className="segmented-control w-full">
       {options.map((opt) => (
         <button
           key={opt.value}
-          onClick={() => onChange(opt.value)}
-          className={`segmented-option flex-1 ${value === opt.value ? "segmented-option-active" : ""}`}
+          onClick={() => opt.disabled ? onDisabledClick?.(opt.value) : onChange(opt.value)}
+          aria-disabled={opt.disabled ? "true" : undefined}
+          title={opt.disabled ? opt.label : undefined}
+          className={`segmented-option flex-1 ${value === opt.value ? "segmented-option-active" : ""} ${opt.disabled ? "segmented-option-disabled" : ""}`}
         >
           {opt.label}
         </button>
@@ -329,11 +327,14 @@ function ShortcutInput({
       {isRecording ? (
         <>
           <div
-            className="field-control flex-1 min-w-0 text-left border-accent bg-accent-subtle text-accent flex items-center justify-between gap-3"
+            className="shortcut-recorder field-control flex-1 min-w-0"
             aria-live="polite"
           >
-            <span className="truncate">{t("settings.pressShortcut")}</span>
-            <span className="text-[11px] text-text-tertiary shrink-0">{t("settings.escToCancel")}</span>
+            <span className="shortcut-recorder-dot" />
+            <span className="shortcut-recorder-copy">
+              <span className="shortcut-recorder-title">{t("settings.pressShortcut")}</span>
+              <span className="shortcut-recorder-hint">{t("settings.escToCancel")}</span>
+            </span>
           </div>
           <button
             onClick={onStopRecord}
@@ -446,6 +447,17 @@ function formatShortcutForDisplay(shortcut: string): string {
 
 function isMacLike(): boolean {
   return /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+}
+
+function isShortcutRegistrationError(error: { kind: string | null; message: string }): boolean {
+  const message = error.message.toLowerCase();
+  return (
+    error.kind === "ShortcutRegistrationError" ||
+    message.includes("shortcut registration") ||
+    message.includes("hotkey") ||
+    message.includes("already") ||
+    message.includes("registered")
+  );
 }
 
 // --- Shared Components ---

@@ -26,3 +26,4 @@ dirs = "6"
 tauri-plugin-global-shortcut = "2.3.1"
 tauri-plugin-autostart = "2.5.1"
 chrono = { version = "0.4.44", features = ["serde"] }
+autocorrect = "2.14.2"

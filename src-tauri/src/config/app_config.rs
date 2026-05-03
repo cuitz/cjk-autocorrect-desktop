@@ -25,7 +25,7 @@ pub enum LanguageMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FormatterConfig {
     pub mode: FormatMode,
-    /// Custom autocorrect binary path. If None, auto-detect from PATH.
+    /// Deprecated. Kept only so older config files continue to deserialize.
     #[serde(default)]
     pub autocorrect_path: Option<String>,
 }
