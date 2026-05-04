@@ -514,6 +514,74 @@ textarea, .selectable {
   font-weight: 500;
 }
 
+.formatter-rule-card {
+  padding: 10px 12px;
+  border: 1px solid var(--c-border-subtle);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-surface-inset) 50%, var(--c-surface-elevated));
+  transition: border-color 0.2s var(--ease-standard),
+              background 0.2s var(--ease-standard);
+}
+
+.formatter-rule-card:hover {
+  border-color: var(--c-border);
+  background: color-mix(in srgb, var(--c-surface-inset) 62%, var(--c-surface-elevated));
+}
+
+.formatter-rule-code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--c-surface-elevated);
+  border: 1px solid var(--c-border-subtle);
+  color: var(--c-text-tertiary);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.formatter-rule-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.formatter-rule-pill-before {
+  background: color-mix(in srgb, var(--c-warning-subtle) 72%, var(--c-surface-elevated));
+  color: color-mix(in srgb, var(--c-warning) 80%, var(--c-text-primary));
+}
+
+.formatter-rule-pill-after {
+  background: color-mix(in srgb, var(--c-accent-subtle) 88%, var(--c-surface-elevated));
+  color: color-mix(in srgb, var(--c-accent) 72%, var(--c-text-primary));
+}
+
+.formatter-rule-example-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.formatter-rule-example {
+  display: block;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--c-surface-elevated);
+  border: 1px solid var(--c-border-subtle);
+  color: var(--c-text-primary);
+  font-size: 11px;
+  line-height: 1.35;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
 /* ── Editor Panels ── */
 
 .editor-panel {
@@ -534,7 +602,7 @@ textarea, .selectable {
   padding: 14px;
   background: var(--c-surface-elevated);
   color: var(--c-text-primary);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.7;
 }
 

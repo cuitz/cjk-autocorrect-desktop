@@ -26,19 +26,106 @@ const FORMATTER_RULES: Array<{
   key: FormatterRuleKey;
   ruleName: string;
   labelKey: TranslationKey;
+  descriptionKey: TranslationKey;
+  beforeExample: string;
+  afterExample: string;
 }> = [
-  { key: "space_word", ruleName: "space-word", labelKey: "settings.ruleSpaceWord" },
-  { key: "space_punctuation", ruleName: "space-punctuation", labelKey: "settings.ruleSpacePunctuation" },
-  { key: "space_bracket", ruleName: "space-bracket", labelKey: "settings.ruleSpaceBracket" },
-  { key: "space_dash", ruleName: "space-dash", labelKey: "settings.ruleSpaceDash" },
-  { key: "space_backticks", ruleName: "space-backticks", labelKey: "settings.ruleSpaceBackticks" },
-  { key: "space_dollar", ruleName: "space-dollar", labelKey: "settings.ruleSpaceDollar" },
-  { key: "fullwidth", ruleName: "fullwidth", labelKey: "settings.ruleFullwidth" },
-  { key: "halfwidth_word", ruleName: "halfwidth-word", labelKey: "settings.ruleHalfwidthWord" },
-  { key: "halfwidth_punctuation", ruleName: "halfwidth-punctuation", labelKey: "settings.ruleHalfwidthPunctuation" },
-  { key: "no_space_fullwidth", ruleName: "no-space-fullwidth", labelKey: "settings.ruleNoSpaceFullwidth" },
-  { key: "no_space_fullwidth_quote", ruleName: "no-space-fullwidth-quote", labelKey: "settings.ruleNoSpaceFullwidthQuote" },
-  { key: "spellcheck", ruleName: "spellcheck", labelKey: "settings.ruleSpellcheck" },
+  {
+    key: "space_word",
+    ruleName: "space-word",
+    labelKey: "settings.ruleSpaceWord",
+    descriptionKey: "settings.ruleSpaceWordDesc",
+    beforeExample: "今天Version2发布",
+    afterExample: "今天 Version 2 发布",
+  },
+  {
+    key: "space_punctuation",
+    ruleName: "space-punctuation",
+    labelKey: "settings.ruleSpacePunctuation",
+    descriptionKey: "settings.ruleSpacePunctuationDesc",
+    beforeExample: "支持 Rust,Python,Go",
+    afterExample: "支持 Rust, Python, Go",
+  },
+  {
+    key: "space_bracket",
+    ruleName: "space-bracket",
+    labelKey: "settings.ruleSpaceBracket",
+    descriptionKey: "settings.ruleSpaceBracketDesc",
+    beforeExample: "请参考API(v2)文档",
+    afterExample: "请参考 API (v2) 文档",
+  },
+  {
+    key: "space_dash",
+    ruleName: "space-dash",
+    labelKey: "settings.ruleSpaceDash",
+    descriptionKey: "settings.ruleSpaceDashDesc",
+    beforeExample: "这是中英混排-示例",
+    afterExample: "这是中英混排 - 示例",
+  },
+  {
+    key: "space_backticks",
+    ruleName: "space-backticks",
+    labelKey: "settings.ruleSpaceBackticks",
+    descriptionKey: "settings.ruleSpaceBackticksDesc",
+    beforeExample: "运行`npm dev`启动项目",
+    afterExample: "运行 `npm dev` 启动项目",
+  },
+  {
+    key: "space_dollar",
+    ruleName: "space-dollar",
+    labelKey: "settings.ruleSpaceDollar",
+    descriptionKey: "settings.ruleSpaceDollarDesc",
+    beforeExample: "公式$E=mc^2$很经典",
+    afterExample: "公式 $E=mc^2$ 很经典",
+  },
+  {
+    key: "fullwidth",
+    ruleName: "fullwidth",
+    labelKey: "settings.ruleFullwidth",
+    descriptionKey: "settings.ruleFullwidthDesc",
+    beforeExample: "你好, world!",
+    afterExample: "你好，world！",
+  },
+  {
+    key: "halfwidth_word",
+    ruleName: "halfwidth-word",
+    labelKey: "settings.ruleHalfwidthWord",
+    descriptionKey: "settings.ruleHalfwidthWordDesc",
+    beforeExample: "请访问ＨＴＴＰＳ：／／ＥＸＡＭＰＬＥ．ＣＯＭ",
+    afterExample: "请访问 HTTPS://EXAMPLE.COM",
+  },
+  {
+    key: "halfwidth_punctuation",
+    ruleName: "halfwidth-punctuation",
+    labelKey: "settings.ruleHalfwidthPunctuation",
+    descriptionKey: "settings.ruleHalfwidthPunctuationDesc",
+    beforeExample: "Use function（arg1，arg2）；",
+    afterExample: "Use function(arg1, arg2);",
+  },
+  {
+    key: "no_space_fullwidth",
+    ruleName: "no-space-fullwidth",
+    labelKey: "settings.ruleNoSpaceFullwidth",
+    descriptionKey: "settings.ruleNoSpaceFullwidthDesc",
+    beforeExample: "你好 ，世界 ！",
+    afterExample: "你好，世界！",
+  },
+  {
+    key: "no_space_fullwidth_quote",
+    ruleName: "no-space-fullwidth-quote",
+    labelKey: "settings.ruleNoSpaceFullwidthQuote",
+    descriptionKey: "settings.ruleNoSpaceFullwidthQuoteDesc",
+    beforeExample: "他说 「 你好 」",
+    afterExample: "他说「你好」",
+  },
+  {
+    key: "spellcheck",
+    ruleName: "spellcheck",
+    labelKey: "settings.ruleSpellcheck",
+    descriptionKey: "settings.ruleSpellcheckDesc",
+    beforeExample: "我们用Javascript开发",
+    afterExample: "我们用 JavaScript 开发",
+  },
 ];
 
 export function SettingsPage({ onBack }: { onBack: () => void }) {
@@ -261,7 +348,12 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
                 <RuleToggle
                   key={rule.key}
                   label={t(rule.labelKey)}
+                  description={t(rule.descriptionKey)}
                   ruleName={rule.ruleName}
+                  beforeLabel={t("settings.exampleBefore")}
+                  afterLabel={t("settings.exampleAfter")}
+                  beforeExample={rule.beforeExample}
+                  afterExample={rule.afterExample}
                   checked={form.formatter.rules[rule.key]}
                   onChange={(checked) => updateFormatterRule(rule.key, checked)}
                 />
@@ -333,43 +425,66 @@ function SegmentedControl({
 
 function RuleToggle({
   label,
+  description,
   ruleName,
+  beforeLabel,
+  afterLabel,
+  beforeExample,
+  afterExample,
   checked,
   onChange,
 }: {
   label: string;
+  description: string;
   ruleName: string;
+  beforeLabel: string;
+  afterLabel: string;
+  beforeExample: string;
+  afterExample: string;
   checked: boolean;
   onChange: (value: boolean) => void;
 }) {
   const labelId = `rule-toggle-${ruleName}`;
 
   return (
-    <div className="flex items-center justify-between gap-3 py-1.5">
-      <div className="min-w-0">
-        <span className="block text-[13px] text-text-primary" id={labelId}>
-          {label}
-        </span>
-        <span className="block text-[11px] text-text-tertiary">
-          {ruleName}
-        </span>
-      </div>
-      <button
-        onClick={() => onChange(!checked)}
-        role="switch"
-        aria-checked={checked}
-        aria-labelledby={labelId}
-        className={`relative w-9 h-[20px] rounded-full transition-colors duration-200 shrink-0 ${
-          checked ? "bg-accent" : "bg-border"
-        }`}
-        type="button"
-      >
-        <span
-          className={`absolute top-[2px] left-[2px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            checked ? "translate-x-4" : ""
+    <div className="formatter-rule-card">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <span className="block text-[13px] font-medium text-text-primary" id={labelId}>
+            {label}
+          </span>
+          <span className="mt-0.5 block text-[12px] leading-relaxed text-text-secondary">
+            {description}
+          </span>
+        </div>
+        <button
+          onClick={() => onChange(!checked)}
+          role="switch"
+          aria-checked={checked}
+          aria-labelledby={labelId}
+          className={`relative mt-0.5 w-9 h-[20px] rounded-full transition-colors duration-200 shrink-0 ${
+            checked ? "bg-accent" : "bg-border"
           }`}
-        />
-      </button>
+          type="button"
+        >
+          <span
+            className={`absolute top-[2px] left-[2px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+              checked ? "translate-x-4" : ""
+            }`}
+          />
+        </button>
+      </div>
+      <div className="mt-2 space-y-1.5 text-[11px]">
+        <span className="formatter-rule-code">{ruleName}</span>
+        <div className="formatter-rule-example-row">
+          <span className="formatter-rule-pill formatter-rule-pill-before">{beforeLabel}</span>
+          <code className="formatter-rule-example">{beforeExample}</code>
+        </div>
+        <div className="formatter-rule-example-row">
+          <span className="formatter-rule-pill formatter-rule-pill-after">{afterLabel}</span>
+          <code className="formatter-rule-example">{afterExample}</code>
+        </div>
+      </div>
     </div>
   );
 }

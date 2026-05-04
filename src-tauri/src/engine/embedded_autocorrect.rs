@@ -76,6 +76,37 @@ fn apply_autocorrect_config(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::app_config::{FormatterConfig, FormatterRules};
+
+    fn format_with_rules(
+        text: &str,
+        configure_rules: impl FnOnce(&mut FormatterRules),
+    ) -> String {
+        let engine = EmbeddedAutocorrectEngine::new();
+        let mut formatter = FormatterConfig {
+            rules: FormatterRules {
+                space_word: false,
+                space_punctuation: false,
+                space_bracket: false,
+                space_dash: false,
+                space_backticks: false,
+                space_dollar: false,
+                fullwidth: false,
+                halfwidth_word: false,
+                halfwidth_punctuation: false,
+                no_space_fullwidth: false,
+                no_space_fullwidth_quote: false,
+                spellcheck: false,
+            },
+        };
+        configure_rules(&mut formatter.rules);
+        let req = FormatRequest {
+            text: text.to_string(),
+            formatter,
+        };
+
+        engine.format(&req).unwrap().formatted_text
+    }
 
     #[test]
     fn test_format_standard() {
@@ -129,5 +160,68 @@ mod tests {
         let resp = engine.format(&req).unwrap();
 
         assert_eq!(resp.formatted_text, "你好world.");
+    }
+
+    #[test]
+    fn test_rule_examples_match_embedded_engine_behavior() {
+        assert_eq!(
+            format_with_rules("hello你好", |rules| rules.space_word = true),
+            "hello 你好"
+        );
+        assert_eq!(
+            format_with_rules("中文+中文", |rules| rules.space_punctuation = true),
+            "中文 + 中文"
+        );
+        assert_eq!(
+            format_with_rules("你好(世界)", |rules| rules.space_bracket = true),
+            "你好 (世界)"
+        );
+        assert_eq!(
+            format_with_rules("你好-世界", |rules| rules.space_dash = true),
+            "你好 - 世界"
+        );
+        assert_eq!(
+            format_with_rules("代码`code`代码", |rules| rules.space_backticks = true),
+            "代码 `code` 代码"
+        );
+        assert_eq!(
+            format_with_rules("令$x+y=1$成立", |rules| rules.space_dollar = true),
+            "令 $x+y=1$ 成立"
+        );
+        assert_eq!(
+            format_with_rules("你好,世界!", |rules| rules.fullwidth = true),
+            "你好，世界！"
+        );
+        assert_eq!(
+            format_with_rules("ＡＰＩ ２０２４", |rules| rules.halfwidth_word = true),
+            "API 2024"
+        );
+        assert_eq!(
+            format_with_rules("Said：Come and，Join us！", |rules| {
+                rules.halfwidth_punctuation = true
+            }),
+            "Said: Come and, Join us!"
+        );
+        assert_eq!(
+            format_with_rules("你好 ，世界 ！", |rules| rules.no_space_fullwidth = true),
+            "你好，世界！"
+        );
+        assert_eq!(
+            format_with_rules("你好 “Quote” 世界", |rules| {
+                rules.no_space_fullwidth_quote = true
+            }),
+            "你好“Quote”世界"
+        );
+    }
+
+    #[test]
+    fn test_spellcheck_rule_requires_word_list() {
+        // Upstream autocorrect only applies spellcheck replacements when a spellcheck
+        // dictionary is loaded. Our embedded config currently toggles the rule severity,
+        // but does not provide any built-in words, so the rule has no effect.
+        assert_eq!(
+            format_with_rules("开放 IOS 接口", |rules| rules.spellcheck = true),
+            "开放 IOS 接口"
+        );
     }
 }
