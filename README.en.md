@@ -15,17 +15,16 @@
 
 ---
 
-CJK AutoCorrect Desktop is a local desktop client powered by the bundled [autocorrect](https://github.com/huacnlee/autocorrect) Rust engine. It formats Chinese, Japanese, and Korean text by adding spacing between CJK characters and Latin letters or numbers, normalizing punctuation, and letting you choose between standard and strict formatting preferences.
+CJK AutoCorrect Desktop is a local desktop client powered by the bundled [autocorrect](https://github.com/huacnlee/autocorrect) Rust engine. It formats Chinese, Japanese, and Korean text by adding spacing between CJK characters and Latin letters or numbers, and by normalizing punctuation.
 
 ## Features
 
 - **Local instant formatting** - Paste or type text, format it in one click, then copy or clear the result. `Cmd/Ctrl + Enter` also formats the current input.
-- **Standard / strict modes** - Standard mode handles common CJK typography fixes. Strict mode remains available as a default-mode preference and currently shares the embedded rule set.
-- **Default mode sync** - Choose the default formatting mode in Settings, and the main formatter view automatically follows that preference.
 - **Clipboard workflow** - Read text from the clipboard and write formatted output back to the clipboard.
 - **Global shortcut** - The default shortcut is `Cmd/Ctrl + Shift + F`, and custom shortcuts can be recorded from the Settings page.
-- **Enhanced history** - Only changed formatting results are saved. History supports search, mode filtering, result copy, restore to the main editor, detail view, and full clear.
+- **Enhanced history** - Only changed formatting results are saved. History supports search, result copy, restore to the main editor, detail view, and full clear.
 - **Bundled formatting engine** - The `autocorrect` Rust crate ships with the app, so no external command-line tool is required.
+- **Rule toggles** - Settings expose the main bundled autocorrect rules, including CJK spacing, punctuation width conversion, halfwidth conversion, and spellcheck.
 - **System integration** - System tray support, close-to-tray behavior, and optional launch at login.
 - **Appearance settings** - Light, dark, and system themes.
 
@@ -115,7 +114,7 @@ src-tauri/src/                # Backend source
 │   └── history_cmd.rs        # Query and clear history
 ├── config/app_config.rs      # AppConfig model and persistence
 ├── engine/
-│   ├── types.rs              # FormatMode and FormatterEngine trait
+│   ├── types.rs              # Formatting request/response types and FormatterEngine trait
 │   └── embedded_autocorrect.rs # Embedded autocorrect implementation
 ├── services/formatter.rs     # Formatting service
 ├── history_store/store.rs    # JSONL history storage
@@ -123,13 +122,6 @@ src-tauri/src/                # Backend source
 ├── errors.rs                 # Shared app errors
 └── lib.rs                    # App setup, tray, shortcuts, and autostart
 ```
-
-## Formatting Modes
-
-| Mode | Description |
-|------|-------------|
-| **Standard** | Adds spacing between CJK text and Latin letters or numbers, and normalizes full-width/half-width punctuation |
-| **Strict** | Formats with the embedded autocorrect rules. It currently shares the same rule set as standard mode |
 
 ## Configuration
 
@@ -140,6 +132,25 @@ App configuration is stored at:
 - **Linux**: `~/.local/share/cjk-autocorrect-desktop/config.json`
 
 History is stored as `history.jsonl` in the same directory.
+
+### Formatting Rules
+
+Settings map directly to the bundled `autocorrect` rule names:
+
+| Setting | autocorrect rule |
+|---------|------------------|
+| Add spaces between CJK and Latin/numbers | `space-word` |
+| Add spaces around punctuation | `space-punctuation` |
+| Add spaces around brackets | `space-bracket` |
+| Add spaces around dashes | `space-dash` |
+| Add spaces around backticks | `space-backticks` |
+| Add spaces around dollar markers | `space-dollar` |
+| Convert CJK punctuation to fullwidth | `fullwidth` |
+| Convert fullwidth letters and numbers | `halfwidth-word` |
+| Convert punctuation to halfwidth in English | `halfwidth-punctuation` |
+| Remove spaces around fullwidth punctuation | `no-space-fullwidth` |
+| Remove spaces around fullwidth quotes | `no-space-fullwidth-quote` |
+| Correct known English terms | `spellcheck` |
 
 ## Privacy
 

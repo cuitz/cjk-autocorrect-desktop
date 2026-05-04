@@ -4,14 +4,11 @@ import { useFormatStore } from "../stores/format";
 import { writeClipboard, type HistoryItem } from "../lib/commands";
 import { type Locale, type TranslationKey, useI18n } from "../i18n";
 
-type ModeFilter = "all" | "standard" | "strict";
-
 export function HistoryPage({ onBack }: { onBack: () => void }) {
   const { items, isLoading, error, load, clear, clearError } = useHistoryStore();
   const { restoreFromHistory } = useFormatStore();
   const [showConfirm, setShowConfirm] = useState(false);
   const [query, setQuery] = useState("");
-  const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -35,11 +32,10 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
         !needle ||
         item.original_text.toLowerCase().includes(needle) ||
         item.formatted_text.toLowerCase().includes(needle);
-      const matchesMode = modeFilter === "all" || item.mode === modeFilter;
 
-      return matchesQuery && matchesMode;
+      return matchesQuery;
     });
-  }, [items, query, modeFilter]);
+  }, [items, query]);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -71,7 +67,7 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
     onBack();
   };
 
-  const hasFilter = query.trim().length > 0 || modeFilter !== "all";
+  const hasFilter = query.trim().length > 0;
 
   return (
     <div className="app-shell page-enter">
@@ -119,20 +115,10 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
             placeholder={t("history.searchPlaceholder")}
             className="field-control flex-1 min-w-0"
           />
-          <SegmentedControl
-            options={[
-              { value: "all", label: t("history.all") },
-              { value: "standard", label: t("common.standard") },
-              { value: "strict", label: t("common.strict") },
-            ]}
-            value={modeFilter}
-            onChange={(value) => setModeFilter(value as ModeFilter)}
-          />
           {hasFilter && (
             <button
               onClick={() => {
                 setQuery("");
-                setModeFilter("all");
               }}
               className="tool-button"
             >
@@ -163,7 +149,6 @@ export function HistoryPage({ onBack }: { onBack: () => void }) {
             <button
               onClick={() => {
                 setQuery("");
-                setModeFilter("all");
               }}
               className="tool-button"
             >
@@ -265,12 +250,7 @@ function HistoryRow({
     <div className="list-card group p-3">
       <button onClick={onOpen} className="w-full text-left block">
         <div className="flex items-center justify-between mb-1.5 gap-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[11px] text-text-tertiary shrink-0">
-              {item.mode === "strict" ? t("common.strict") : t("common.standard")}
-            </span>
-          </div>
-          <span className="text-[11px] text-text-tertiary shrink-0">
+          <span className="text-[11px] text-text-tertiary">
             {formatTime(item.created_at, locale, t)}
           </span>
         </div>
@@ -343,9 +323,6 @@ function HistoryDetailDialog({
             <h3 className="text-[14px] font-semibold text-text-primary shrink-0">
               {t("history.title")}
             </h3>
-            <span className="text-[11px] text-text-tertiary">
-              {item.mode === "strict" ? t("common.strictMode") : t("common.standardMode")}
-            </span>
           </div>
           <button
             onClick={onClose}
@@ -422,30 +399,6 @@ function DetailBlock({
         {text}
       </pre>
     </section>
-  );
-}
-
-function SegmentedControl({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: string; label: string }[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="segmented-control">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          onClick={() => onChange(option.value)}
-          className={`segmented-option ${value === option.value ? "segmented-option-active" : ""}`}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
   );
 }
 

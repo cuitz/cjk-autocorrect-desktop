@@ -31,10 +31,10 @@ pub async fn save_config(app: tauri::AppHandle, config: AppConfigDto) -> Result<
 
     // 2. Re-register global shortcut
     {
-        use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
-        use tauri_plugin_clipboard_manager::ClipboardExt;
-        use crate::services::formatter::FormatterService;
         use crate::commands::clipboard::ClipboardFormatEvent;
+        use crate::services::formatter::FormatterService;
+        use tauri_plugin_clipboard_manager::ClipboardExt;
+        use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
         let gs = app.global_shortcut();
         let shortcut_str = crate::shortcut::normalize_shortcut(&app_config.shortcut);
@@ -45,27 +45,24 @@ pub async fn save_config(app: tauri::AppHandle, config: AppConfigDto) -> Result<
                 let _ = gs.unregister(previous_shortcut.as_str());
             }
 
-            let register_result = gs.on_shortcut(
-                shortcut_str.as_str(),
-                move |app, _shortcut, event| {
+            let register_result =
+                gs.on_shortcut(shortcut_str.as_str(), move |app, _shortcut, event| {
                     if event.state == ShortcutState::Pressed {
                         if let Ok(text) = app.clipboard().read_text() {
                             if !text.trim().is_empty() {
                                 let original = text.clone();
                                 let service = FormatterService::new();
-                                let request = crate::dto::FormatTextDto {
-                                    text,
-                                    mode: Some("standard".to_string()),
-                                };
+                                let request = crate::dto::FormatTextDto { text };
                                 if let Ok(result) = service.format(request) {
-                                    let _ = app
-                                        .clipboard()
-                                        .write_text(&result.formatted_text);
-                                    let _ = app.emit("clipboard-formatted", ClipboardFormatEvent {
-                                        original_text: original,
-                                        formatted_text: result.formatted_text,
-                                        changed: result.changed,
-                                    });
+                                    let _ = app.clipboard().write_text(&result.formatted_text);
+                                    let _ = app.emit(
+                                        "clipboard-formatted",
+                                        ClipboardFormatEvent {
+                                            original_text: original,
+                                            formatted_text: result.formatted_text,
+                                            changed: result.changed,
+                                        },
+                                    );
                                 }
                             }
                         }
@@ -75,32 +72,29 @@ pub async fn save_config(app: tauri::AppHandle, config: AppConfigDto) -> Result<
                             let _ = window.set_focus();
                         }
                     }
-                },
-            );
+                });
 
             if let Err(e) = register_result {
                 if previous_shortcut != shortcut_str && previous_was_registered {
-                    let _ = gs.on_shortcut(
-                        previous_shortcut.as_str(),
-                        move |app, _shortcut, event| {
+                    let _ =
+                        gs.on_shortcut(previous_shortcut.as_str(), move |app, _shortcut, event| {
                             if event.state == ShortcutState::Pressed {
                                 if let Ok(text) = app.clipboard().read_text() {
                                     if !text.trim().is_empty() {
                                         let original = text.clone();
                                         let service = FormatterService::new();
-                                        let request = crate::dto::FormatTextDto {
-                                            text,
-                                            mode: Some("standard".to_string()),
-                                        };
+                                        let request = crate::dto::FormatTextDto { text };
                                         if let Ok(result) = service.format(request) {
-                                            let _ = app
-                                                .clipboard()
-                                                .write_text(&result.formatted_text);
-                                            let _ = app.emit("clipboard-formatted", ClipboardFormatEvent {
-                                                original_text: original,
-                                                formatted_text: result.formatted_text,
-                                                changed: result.changed,
-                                            });
+                                            let _ =
+                                                app.clipboard().write_text(&result.formatted_text);
+                                            let _ = app.emit(
+                                                "clipboard-formatted",
+                                                ClipboardFormatEvent {
+                                                    original_text: original,
+                                                    formatted_text: result.formatted_text,
+                                                    changed: result.changed,
+                                                },
+                                            );
                                         }
                                     }
                                 }
@@ -110,8 +104,7 @@ pub async fn save_config(app: tauri::AppHandle, config: AppConfigDto) -> Result<
                                     let _ = window.set_focus();
                                 }
                             }
-                        },
-                    );
+                        });
                 }
 
                 return Err(AppError::ShortcutRegistrationError(e.to_string()));

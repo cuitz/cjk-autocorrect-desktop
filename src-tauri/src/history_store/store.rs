@@ -11,7 +11,6 @@ pub struct HistoryItem {
     pub id: String,
     pub original_text: String,
     pub formatted_text: String,
-    pub mode: String,
     pub changed: bool,
     pub created_at: String,
 }
@@ -81,9 +80,8 @@ impl HistoryStore {
             }
         }
 
-        fs::rename(&tmp_path, &self.path).map_err(|e| {
-            AppError::ConfigError(format!("Failed to replace history file: {}", e))
-        })?;
+        fs::rename(&tmp_path, &self.path)
+            .map_err(|e| AppError::ConfigError(format!("Failed to replace history file: {}", e)))?;
 
         Ok(())
     }
@@ -139,18 +137,9 @@ impl HistoryStore {
 /// items are created within the same millisecond.
 static HISTORY_COUNTER: AtomicU64 = AtomicU64::new(0);
 
-pub fn create_history_item(
-    original: &str,
-    formatted: &str,
-    mode: &str,
-    changed: bool,
-) -> HistoryItem {
+pub fn create_history_item(original: &str, formatted: &str, changed: bool) -> HistoryItem {
     let count = HISTORY_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let id = format!(
-        "{}-{}",
-        chrono::Local::now().timestamp_millis(),
-        count
-    );
+    let id = format!("{}-{}", chrono::Local::now().timestamp_millis(), count);
 
     let created_at = chrono::Local::now().to_rfc3339();
 
@@ -158,7 +147,6 @@ pub fn create_history_item(
         id,
         original_text: original.to_string(),
         formatted_text: formatted.to_string(),
-        mode: mode.to_string(),
         changed,
         created_at,
     }

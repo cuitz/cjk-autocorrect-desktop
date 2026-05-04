@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::config::app_config::{AppConfig, FormatterConfig, LanguageMode, ThemeMode};
-use crate::engine::types::{FormatMode, FormatRequest, FormatResponse};
+use crate::config::app_config::{
+    AppConfig, FormatterConfig, FormatterRules, LanguageMode, ThemeMode,
+};
+use crate::engine::types::{FormatRequest, FormatResponse};
 use crate::history_store::store::HistoryItem;
 
 // --- Format DTOs ---
@@ -9,7 +11,6 @@ use crate::history_store::store::HistoryItem;
 #[derive(Debug, Deserialize)]
 pub struct FormatTextDto {
     pub text: String,
-    pub mode: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -31,13 +32,9 @@ pub struct DiagnosticDto {
 
 impl From<FormatTextDto> for FormatRequest {
     fn from(dto: FormatTextDto) -> Self {
-        let mode = match dto.mode.as_deref() {
-            Some("strict") => FormatMode::Strict,
-            _ => FormatMode::Standard,
-        };
         FormatRequest {
             text: dto.text,
-            mode,
+            formatter: FormatterConfig::default(),
         }
     }
 }
@@ -78,6 +75,7 @@ pub struct AppConfigDto {
     pub history_limit: u32,
     #[serde(default)]
     pub diff_highlight: bool,
+    #[serde(default)]
     pub formatter: FormatterConfigDto,
 }
 
@@ -95,11 +93,65 @@ pub struct AppConfigResponseDto {
     pub version: u32,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FormatterConfigDto {
-    pub mode: String,
     #[serde(default)]
-    pub autocorrect_path: Option<String>,
+    pub rules: FormatterRulesDto,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct FormatterRulesDto {
+    #[serde(default = "default_true")]
+    pub space_word: bool,
+    #[serde(default = "default_true")]
+    pub space_punctuation: bool,
+    #[serde(default = "default_true")]
+    pub space_bracket: bool,
+    #[serde(default = "default_true")]
+    pub space_dash: bool,
+    #[serde(default = "default_true")]
+    pub space_backticks: bool,
+    #[serde(default)]
+    pub space_dollar: bool,
+    #[serde(default = "default_true")]
+    pub fullwidth: bool,
+    #[serde(default = "default_true")]
+    pub halfwidth_word: bool,
+    #[serde(default = "default_true")]
+    pub halfwidth_punctuation: bool,
+    #[serde(default = "default_true")]
+    pub no_space_fullwidth: bool,
+    #[serde(default = "default_true")]
+    pub no_space_fullwidth_quote: bool,
+    #[serde(default)]
+    pub spellcheck: bool,
+}
+
+impl Default for FormatterConfigDto {
+    fn default() -> Self {
+        Self {
+            rules: FormatterRulesDto::default(),
+        }
+    }
+}
+
+impl Default for FormatterRulesDto {
+    fn default() -> Self {
+        Self {
+            space_word: true,
+            space_punctuation: true,
+            space_bracket: true,
+            space_dash: true,
+            space_backticks: true,
+            space_dollar: false,
+            fullwidth: true,
+            halfwidth_word: true,
+            halfwidth_punctuation: true,
+            no_space_fullwidth: true,
+            no_space_fullwidth_quote: true,
+            spellcheck: false,
+        }
+    }
 }
 
 impl From<AppConfig> for AppConfigResponseDto {
@@ -113,10 +165,7 @@ impl From<AppConfig> for AppConfigResponseDto {
             history_enabled: config.history_enabled,
             history_limit: config.history_limit,
             diff_highlight: config.diff_highlight,
-            formatter: FormatterConfigDto {
-                mode: format!("{:?}", config.formatter.mode).to_lowercase(),
-                autocorrect_path: config.formatter.autocorrect_path,
-            },
+            formatter: FormatterConfigDto::from(config.formatter),
             version: config.version,
         }
     }
@@ -136,7 +185,6 @@ impl From<AppConfigDto> for AppConfig {
             "ko" | "ko-KR" | "ko-kr" => LanguageMode::Ko,
             _ => LanguageMode::System,
         };
-        let format_mode = FormatMode::Standard;
         let mut app_config = AppConfig {
             shortcut: dto.shortcut,
             auto_start: dto.auto_start,
@@ -146,10 +194,7 @@ impl From<AppConfigDto> for AppConfig {
             history_enabled: dto.history_enabled,
             history_limit: dto.history_limit,
             diff_highlight: dto.diff_highlight,
-            formatter: FormatterConfig {
-                mode: format_mode,
-                autocorrect_path: dto.formatter.autocorrect_path,
-            },
+            formatter: FormatterConfig::from(dto.formatter),
             version: 1,
         };
         app_config.clamp_history_limit();
@@ -157,8 +202,66 @@ impl From<AppConfigDto> for AppConfig {
     }
 }
 
+impl From<FormatterConfig> for FormatterConfigDto {
+    fn from(config: FormatterConfig) -> Self {
+        Self {
+            rules: FormatterRulesDto::from(config.rules),
+        }
+    }
+}
+
+impl From<FormatterConfigDto> for FormatterConfig {
+    fn from(dto: FormatterConfigDto) -> Self {
+        Self {
+            rules: FormatterRules::from(dto.rules),
+        }
+    }
+}
+
+impl From<FormatterRules> for FormatterRulesDto {
+    fn from(rules: FormatterRules) -> Self {
+        Self {
+            space_word: rules.space_word,
+            space_punctuation: rules.space_punctuation,
+            space_bracket: rules.space_bracket,
+            space_dash: rules.space_dash,
+            space_backticks: rules.space_backticks,
+            space_dollar: rules.space_dollar,
+            fullwidth: rules.fullwidth,
+            halfwidth_word: rules.halfwidth_word,
+            halfwidth_punctuation: rules.halfwidth_punctuation,
+            no_space_fullwidth: rules.no_space_fullwidth,
+            no_space_fullwidth_quote: rules.no_space_fullwidth_quote,
+            spellcheck: rules.spellcheck,
+        }
+    }
+}
+
+impl From<FormatterRulesDto> for FormatterRules {
+    fn from(dto: FormatterRulesDto) -> Self {
+        Self {
+            space_word: dto.space_word,
+            space_punctuation: dto.space_punctuation,
+            space_bracket: dto.space_bracket,
+            space_dash: dto.space_dash,
+            space_backticks: dto.space_backticks,
+            space_dollar: dto.space_dollar,
+            fullwidth: dto.fullwidth,
+            halfwidth_word: dto.halfwidth_word,
+            halfwidth_punctuation: dto.halfwidth_punctuation,
+            no_space_fullwidth: dto.no_space_fullwidth,
+            no_space_fullwidth_quote: dto.no_space_fullwidth_quote,
+            spellcheck: dto.spellcheck,
+        }
+    }
+}
+
 fn default_language() -> String {
     "system".to_string()
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn language_to_string(language: &LanguageMode) -> String {
@@ -184,7 +287,6 @@ pub struct HistoryItemDto {
     pub id: String,
     pub original_text: String,
     pub formatted_text: String,
-    pub mode: String,
     pub changed: bool,
     pub created_at: String,
 }
@@ -195,7 +297,6 @@ impl From<HistoryItem> for HistoryItemDto {
             id: item.id,
             original_text: item.original_text,
             formatted_text: item.formatted_text,
-            mode: item.mode,
             changed: item.changed,
             created_at: item.created_at,
         }

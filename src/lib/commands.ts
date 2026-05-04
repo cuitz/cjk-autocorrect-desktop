@@ -22,27 +22,39 @@ export interface AppConfig {
   history_enabled: boolean;
   history_limit: number;
   diff_highlight: boolean;
-  formatter: {
-    mode: string;
-    autocorrect_path?: string | null;
-  };
+  formatter: FormatterConfig;
   version: number;
+}
+
+export interface FormatterConfig {
+  rules: FormatterRules;
+}
+
+export interface FormatterRules {
+  space_word: boolean;
+  space_punctuation: boolean;
+  space_bracket: boolean;
+  space_dash: boolean;
+  space_backticks: boolean;
+  space_dollar: boolean;
+  fullwidth: boolean;
+  halfwidth_word: boolean;
+  halfwidth_punctuation: boolean;
+  no_space_fullwidth: boolean;
+  no_space_fullwidth_quote: boolean;
+  spellcheck: boolean;
 }
 
 export interface HistoryItem {
   id: string;
   original_text: string;
   formatted_text: string;
-  mode: string;
   changed: boolean;
   created_at: string;
 }
 
-export async function formatText(
-  text: string,
-  mode?: string
-): Promise<FormatResult> {
-  return invoke("format_text", { request: { text, mode: mode || null } });
+export async function formatText(text: string): Promise<FormatResult> {
+  return invoke("format_text", { request: { text } });
 }
 
 export async function loadConfig(): Promise<AppConfig> {

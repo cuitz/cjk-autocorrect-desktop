@@ -8,3 +8,5 @@ All notable changes to this project will be documented in this file.
 - Added CJK text formatting through the bundled `autocorrect` Rust engine.
 - Added clipboard read/write, history records, theme settings, system tray, global shortcut, and autostart settings.
 - Added app icon assets and release-ready project metadata.
+- Removed the unused strict formatting mode from the UI, API, and documentation.
+- Added frontend/backend settings for the bundled autocorrect engine rule toggles.

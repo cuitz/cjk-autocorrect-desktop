@@ -15,17 +15,16 @@
 
 ---
 
-基于内置 [autocorrect](https://github.com/huacnlee/autocorrect) Rust 引擎的桌面客户端，为中日韩（CJK）文本提供本地即时排版格式化。它可以自动在中文与英文/数字之间添加空格、修正全半角标点，并通过标准模式或严格模式适配不同的格式化偏好。
+基于内置 [autocorrect](https://github.com/huacnlee/autocorrect) Rust 引擎的桌面客户端，为中日韩（CJK）文本提供本地即时排版格式化。它可以自动在中文与英文/数字之间添加空格，并修正全半角标点。
 
 ## ✨ 功能特性
 
 - **本地即时格式化** — 粘贴或输入文本后，一键生成格式化结果，支持复制、清空和 `Cmd/Ctrl + Enter` 快捷格式化
-- **标准 / 严格模式** — 标准模式处理常见 CJK 排版；严格模式保留为默认模式偏好，当前与标准模式共享内置规则集
-- **默认模式同步** — 可在设置中选择默认格式化模式，主界面会自动读取并同步当前配置
 - **剪贴板工作流** — 支持从剪贴板读取文本，并将格式化结果写回剪贴板
 - **全局快捷键** — 默认 `Cmd/Ctrl + Shift + F`，支持在设置页录制自定义组合键
-- **历史记录增强** — 仅保存实际发生修改的记录，支持搜索、按模式筛选、复制结果、恢复到主界面和清空历史
+- **历史记录增强** — 仅保存实际发生修改的记录，支持搜索、复制结果、恢复到主界面和清空历史
 - **内置格式化引擎** — `autocorrect` Rust crate 随应用打包，无需额外安装命令行工具
+- **规则开关同步** — 设置页可开关内置 autocorrect 的主要规则，包括 CJK 空格、标点全角化、半角化和拼写修正
 - **系统集成** — 支持系统托盘、关闭窗口时最小化到托盘、开机自启动
 - **外观设置** — 支持浅色、深色和跟随系统主题
 
@@ -115,7 +114,7 @@ src-tauri/src/                # 后端源码
 │   └── history_cmd.rs        # 历史记录查询/清空
 ├── config/app_config.rs      # AppConfig 结构与持久化
 ├── engine/
-│   ├── types.rs              # FormatMode, FormatterEngine trait
+│   ├── types.rs              # 格式化请求/响应类型与 FormatterEngine trait
 │   └── embedded_autocorrect.rs # 内置 autocorrect 引擎实现
 ├── services/formatter.rs     # 格式化服务
 ├── history_store/store.rs    # JSONL 文件历史存储
@@ -123,13 +122,6 @@ src-tauri/src/                # 后端源码
 ├── errors.rs                 # 统一错误类型
 └── lib.rs                    # 应用入口（托盘、快捷键、自启动）
 ```
-
-## ⌨️ 格式化模式
-
-| 模式 | 说明 |
-|------|------|
-| **标准模式** | 自动在中文与英文/数字之间添加空格，修正全半角标点 |
-| **严格模式** | 使用内置 autocorrect 规则格式化；当前与标准模式共享同一规则集 |
 
 ## ⚙️ 配置
 
@@ -140,6 +132,25 @@ src-tauri/src/                # 后端源码
 - **Linux**: `~/.local/share/cjk-autocorrect-desktop/config.json`
 
 历史记录存储为同目录下的 `history.jsonl`。
+
+### 格式化规则
+
+设置页的规则开关与内置 `autocorrect` 规则名一一对应：
+
+| 设置 | autocorrect 规则 |
+|------|------------------|
+| CJK 与英文/数字间补空格 | `space-word` |
+| 标点符号旁补空格 | `space-punctuation` |
+| 括号旁补空格 | `space-bracket` |
+| 连字符旁补空格 | `space-dash` |
+| 反引号旁补空格 | `space-backticks` |
+| 美元符号旁补空格 | `space-dollar` |
+| CJK 标点转全角 | `fullwidth` |
+| 全角字母和数字转半角 | `halfwidth-word` |
+| 英文语境标点转半角 | `halfwidth-punctuation` |
+| 清理全角标点旁空格 | `no-space-fullwidth` |
+| 清理全角引号旁空格 | `no-space-fullwidth-quote` |
+| 英文专有词修正 | `spellcheck` |
 
 ## 🔒 隐私说明
 

@@ -1,17 +1,12 @@
+use crate::config::app_config::FormatterConfig;
 use serde::{Deserialize, Serialize};
 
 use crate::errors::AppError;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum FormatMode {
-    Standard,
-    Strict,
-}
-
 #[derive(Debug)]
 pub struct FormatRequest {
     pub text: String,
-    pub mode: FormatMode,
+    pub formatter: FormatterConfig,
 }
 
 #[derive(Debug)]

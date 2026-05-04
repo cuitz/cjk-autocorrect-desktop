@@ -17,10 +17,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
     result,
     isFormatting,
     error,
-    mode,
     setInputText,
-    setMode,
-    setError,
     format,
     clear,
     clearError,
@@ -38,9 +35,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
   const toastError =
     error === "EMPTY_INPUT"
       ? t("format.emptyInput")
-      : error === "STRICT_UNAVAILABLE"
-        ? t("format.strictUnavailable")
-        : error;
+      : error;
   const formatShortcutHint = isMacLike()
     ? t("format.copyShortcutMac")
     : t("format.copyShortcutWindows");
@@ -52,17 +47,6 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    if (config?.formatter.mode === "strict") {
-      if (mode !== "standard") setMode("standard");
-      return;
-    }
-
-    if (config?.formatter.mode && config.formatter.mode !== mode) {
-      setMode(config.formatter.mode);
-    }
-  }, [config?.formatter.mode, mode, setMode]);
 
   const handlePaste = async () => {
     try {
@@ -84,10 +68,6 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
 
   const handleFormat = () => {
     format();
-  };
-
-  const handleStrictUnavailable = () => {
-    setError("STRICT_UNAVAILABLE");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -113,28 +93,6 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
           </span>
         </div>
         <div className="toolbar-actions">
-          {/* Mode selector — segmented control */}
-          <div className="segmented-control" role="radiogroup" aria-label={t("settings.formatMode")}>
-            <button
-              onClick={() => setMode("standard")}
-              role="radio"
-              aria-checked={mode === "standard"}
-              className={`segmented-option ${mode === "standard" ? "segmented-option-active" : ""}`}
-            >
-              {t("common.standard")}
-            </button>
-            <button
-              onClick={handleStrictUnavailable}
-              aria-disabled="true"
-              title={t("format.strictUnavailable")}
-              className="segmented-option segmented-option-disabled"
-            >
-              {t("common.strict")}
-            </button>
-          </div>
-
-          <div className="toolbar-divider" />
-
           <button
             onClick={handlePaste}
             className="tool-button"

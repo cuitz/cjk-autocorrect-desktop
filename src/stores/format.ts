@@ -6,11 +6,8 @@ interface FormatState {
   result: FormatResult | null;
   isFormatting: boolean;
   error: string | null;
-  mode: string;
 
   setInputText: (text: string) => void;
-  setMode: (mode: string) => void;
-  setError: (error: string) => void;
   restoreFromHistory: (item: HistoryItem) => void;
   populateFromClipboard: (original: string, formatted: string, changed: boolean) => void;
   format: () => Promise<void>;
@@ -23,11 +20,8 @@ export const useFormatStore = create<FormatState>((set, get) => ({
   result: null,
   isFormatting: false,
   error: null,
-  mode: "standard",
 
   setInputText: (text) => set({ inputText: text }),
-  setMode: (mode) => set({ mode }),
-  setError: (error) => set({ error }),
   restoreFromHistory: (item) =>
     set({
       inputText: item.original_text,
@@ -38,7 +32,6 @@ export const useFormatStore = create<FormatState>((set, get) => ({
         diagnostics: [],
         elapsed_ms: 0,
       },
-      mode: "standard",
       isFormatting: false,
       error: null,
     }),
@@ -58,7 +51,7 @@ export const useFormatStore = create<FormatState>((set, get) => ({
     }),
 
   format: async () => {
-    const { inputText, mode } = get();
+    const { inputText } = get();
     if (!inputText.trim()) {
       set({ error: "EMPTY_INPUT" });
       return;
@@ -66,7 +59,7 @@ export const useFormatStore = create<FormatState>((set, get) => ({
 
     set({ isFormatting: true, error: null });
     try {
-      const result = await formatText(inputText, mode);
+      const result = await formatText(inputText);
       set({ result, isFormatting: false });
     } catch (err) {
       set({

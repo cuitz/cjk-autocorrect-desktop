@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-use crate::engine::FormatMode;
 use crate::errors::AppError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,10 +23,94 @@ pub enum LanguageMode {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FormatterConfig {
-    pub mode: FormatMode,
-    /// Deprecated. Kept only so older config files continue to deserialize.
+    #[serde(default = "default_engine_rules")]
+    pub rules: FormatterRules,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FormatterRules {
+    /// Auto add spacing between CJK text and Latin letters or numbers.
+    #[serde(default = "default_true")]
+    pub space_word: bool,
+    /// Add space around punctuation-like symbols near CJK text.
+    #[serde(default = "default_true")]
+    pub space_punctuation: bool,
+    /// Add space around brackets when near CJK text.
+    #[serde(default = "default_true")]
+    pub space_bracket: bool,
+    /// Add space around dash separators near CJK text.
+    #[serde(default = "default_true")]
+    pub space_dash: bool,
+    /// Add space around backticks near CJK text.
+    #[serde(default = "default_true")]
+    pub space_backticks: bool,
+    /// Add space around dollar markers near CJK text.
     #[serde(default)]
-    pub autocorrect_path: Option<String>,
+    pub space_dollar: bool,
+    /// Convert punctuation near CJK text to fullwidth punctuation.
+    #[serde(default = "default_true")]
+    pub fullwidth: bool,
+    /// Convert fullwidth alphanumeric characters to halfwidth.
+    #[serde(default = "default_true")]
+    pub halfwidth_word: bool,
+    /// Convert fullwidth punctuation to halfwidth in English contexts.
+    #[serde(default = "default_true")]
+    pub halfwidth_punctuation: bool,
+    /// Remove spaces around fullwidth punctuation.
+    #[serde(default = "default_true")]
+    pub no_space_fullwidth: bool,
+    /// Remove spaces around fullwidth quotes.
+    #[serde(default = "default_true")]
+    pub no_space_fullwidth_quote: bool,
+    /// Apply autocorrect's spellcheck dictionary.
+    #[serde(default)]
+    pub spellcheck: bool,
+}
+
+impl Default for FormatterRules {
+    fn default() -> Self {
+        Self {
+            space_word: true,
+            space_punctuation: true,
+            space_bracket: true,
+            space_dash: true,
+            space_backticks: true,
+            space_dollar: false,
+            fullwidth: true,
+            halfwidth_word: true,
+            halfwidth_punctuation: true,
+            no_space_fullwidth: true,
+            no_space_fullwidth_quote: true,
+            spellcheck: false,
+        }
+    }
+}
+
+impl FormatterRules {
+    pub fn autocorrect_rules(&self) -> [(&'static str, bool); 12] {
+        [
+            ("space-word", self.space_word),
+            ("space-punctuation", self.space_punctuation),
+            ("space-bracket", self.space_bracket),
+            ("space-dash", self.space_dash),
+            ("space-backticks", self.space_backticks),
+            ("space-dollar", self.space_dollar),
+            ("fullwidth", self.fullwidth),
+            ("halfwidth-word", self.halfwidth_word),
+            ("halfwidth-punctuation", self.halfwidth_punctuation),
+            ("no-space-fullwidth", self.no_space_fullwidth),
+            ("no-space-fullwidth-quote", self.no_space_fullwidth_quote),
+            ("spellcheck", self.spellcheck),
+        ]
+    }
+}
+
+impl Default for FormatterConfig {
+    fn default() -> Self {
+        Self {
+            rules: FormatterRules::default(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,6 +126,7 @@ pub struct AppConfig {
     pub history_limit: u32,
     #[serde(default)]
     pub diff_highlight: bool,
+    #[serde(default)]
     pub formatter: FormatterConfig,
     pub version: u32,
 }
@@ -58,10 +142,7 @@ impl Default for AppConfig {
             history_enabled: true,
             history_limit: 500,
             diff_highlight: false,
-            formatter: FormatterConfig {
-                mode: FormatMode::Standard,
-                autocorrect_path: None,
-            },
+            formatter: FormatterConfig::default(),
             version: 1,
         }
     }
@@ -131,9 +212,19 @@ fn default_history_limit() -> u32 {
     500
 }
 
+fn default_true() -> bool {
+    true
+}
+
+fn default_engine_rules() -> FormatterRules {
+    FormatterRules::default()
+}
+
 impl AppConfig {
     /// Clamp history_limit to valid range [100, 1000].
     pub fn clamp_history_limit(&mut self) {
-        self.history_limit = self.history_limit.clamp(HISTORY_LIMIT_MIN, HISTORY_LIMIT_MAX);
+        self.history_limit = self
+            .history_limit
+            .clamp(HISTORY_LIMIT_MIN, HISTORY_LIMIT_MAX);
     }
 }

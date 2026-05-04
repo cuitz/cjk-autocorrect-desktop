@@ -5,6 +5,42 @@ import type { AppConfig } from "../lib/commands";
 import { normalizeCommandError } from "../lib/errors";
 import { type TranslationKey, useI18n } from "../i18n";
 
+type FormatterRuleKey = keyof AppConfig["formatter"]["rules"];
+
+const DEFAULT_FORMATTER_RULES: AppConfig["formatter"]["rules"] = {
+  space_word: true,
+  space_punctuation: true,
+  space_bracket: true,
+  space_dash: true,
+  space_backticks: true,
+  space_dollar: false,
+  fullwidth: true,
+  halfwidth_word: true,
+  halfwidth_punctuation: true,
+  no_space_fullwidth: true,
+  no_space_fullwidth_quote: true,
+  spellcheck: false,
+};
+
+const FORMATTER_RULES: Array<{
+  key: FormatterRuleKey;
+  ruleName: string;
+  labelKey: TranslationKey;
+}> = [
+  { key: "space_word", ruleName: "space-word", labelKey: "settings.ruleSpaceWord" },
+  { key: "space_punctuation", ruleName: "space-punctuation", labelKey: "settings.ruleSpacePunctuation" },
+  { key: "space_bracket", ruleName: "space-bracket", labelKey: "settings.ruleSpaceBracket" },
+  { key: "space_dash", ruleName: "space-dash", labelKey: "settings.ruleSpaceDash" },
+  { key: "space_backticks", ruleName: "space-backticks", labelKey: "settings.ruleSpaceBackticks" },
+  { key: "space_dollar", ruleName: "space-dollar", labelKey: "settings.ruleSpaceDollar" },
+  { key: "fullwidth", ruleName: "fullwidth", labelKey: "settings.ruleFullwidth" },
+  { key: "halfwidth_word", ruleName: "halfwidth-word", labelKey: "settings.ruleHalfwidthWord" },
+  { key: "halfwidth_punctuation", ruleName: "halfwidth-punctuation", labelKey: "settings.ruleHalfwidthPunctuation" },
+  { key: "no_space_fullwidth", ruleName: "no-space-fullwidth", labelKey: "settings.ruleNoSpaceFullwidth" },
+  { key: "no_space_fullwidth_quote", ruleName: "no-space-fullwidth-quote", labelKey: "settings.ruleNoSpaceFullwidthQuote" },
+  { key: "spellcheck", ruleName: "spellcheck", labelKey: "settings.ruleSpellcheck" },
+];
+
 export function SettingsPage({ onBack }: { onBack: () => void }) {
   const { config, isLoading, isSaving, error, load, save, clearError } = useConfigStore();
   const { check: checkEngine } = useEngineStore();
@@ -12,7 +48,6 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
   const [showSaved, setShowSaved] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [shortcutError, setShortcutError] = useState<string | null>(null);
-  const [modeError, setModeError] = useState<string | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const { t } = useI18n();
 
@@ -23,13 +58,7 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     if (config) {
-      setForm({
-        ...config,
-        formatter: {
-          ...config.formatter,
-          mode: config.formatter.mode === "strict" ? "standard" : config.formatter.mode,
-        },
-      });
+      setForm(config);
     }
   }, [config]);
 
@@ -69,14 +98,35 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
     setForm((prev) => (prev ? { ...prev, ...partial } : prev));
   };
 
-  const updateFormatter = (partial: Partial<AppConfig["formatter"]>) => {
+  const updateFormatterRule = (key: FormatterRuleKey, value: boolean) => {
     setForm((prev) =>
-      prev ? { ...prev, formatter: { ...prev.formatter, ...partial } } : prev
+      prev
+        ? {
+            ...prev,
+            formatter: {
+              ...prev.formatter,
+              rules: {
+                ...prev.formatter.rules,
+                [key]: value,
+              },
+            },
+          }
+        : prev
     );
   };
 
-  const handleStrictUnavailable = () => {
-    setModeError(t("settings.strictUnavailable"));
+  const resetFormatterRules = () => {
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            formatter: {
+              ...prev.formatter,
+              rules: DEFAULT_FORMATTER_RULES,
+            },
+          }
+        : prev
+    );
   };
 
   const hasChanges = config && form && JSON.stringify(config) !== JSON.stringify(form);
@@ -200,31 +250,33 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
 
         {/* Formatter */}
         <Section title={t("settings.formatter")}>
-          <Field label={t("settings.formatMode")}>
-            <SegmentedControl
-              options={[
-                { value: "standard", label: t("common.standardMode") },
-                { value: "strict", label: t("common.strictMode"), disabled: true },
-              ]}
-              value={form.formatter.mode}
-              onChange={(v) => {
-                setModeError(null);
-                updateFormatter({ mode: v });
-              }}
-              onDisabledClick={handleStrictUnavailable}
-            />
-            {modeError && (
-              <p className="shortcut-error">{modeError}</p>
-            )}
-            <p className="mt-1.5 text-[11px] text-text-tertiary leading-relaxed">
-              {t("settings.standardHelp")}
-            </p>
-          </Field>
           <ToggleField
             label={t("settings.diffHighlight")}
             checked={form.diff_highlight}
             onChange={(v) => updateForm({ diff_highlight: v })}
           />
+          <Field label={t("settings.formatRules")}>
+            <div className="space-y-1.5">
+              {FORMATTER_RULES.map((rule) => (
+                <RuleToggle
+                  key={rule.key}
+                  label={t(rule.labelKey)}
+                  ruleName={rule.ruleName}
+                  checked={form.formatter.rules[rule.key]}
+                  onChange={(checked) => updateFormatterRule(rule.key, checked)}
+                />
+              ))}
+            </div>
+            <div className="mt-2 flex justify-end">
+              <button
+                onClick={resetFormatterRules}
+                className="tool-button"
+                type="button"
+              >
+                {t("settings.resetRules")}
+              </button>
+            </div>
+          </Field>
           <Field label={t("settings.formatEngine")}>
             <div className="engine-badge">
               <span className="status-dot status-dot-success" />
@@ -259,26 +311,65 @@ function SegmentedControl({
   options,
   value,
   onChange,
-  onDisabledClick,
 }: {
-  options: { value: string; label: string; disabled?: boolean }[];
+  options: { value: string; label: string }[];
   value: string;
   onChange: (v: string) => void;
-  onDisabledClick?: (v: string) => void;
 }) {
   return (
     <div className="segmented-control w-full">
       {options.map((opt) => (
         <button
           key={opt.value}
-          onClick={() => opt.disabled ? onDisabledClick?.(opt.value) : onChange(opt.value)}
-          aria-disabled={opt.disabled ? "true" : undefined}
-          title={opt.disabled ? opt.label : undefined}
-          className={`segmented-option flex-1 ${value === opt.value ? "segmented-option-active" : ""} ${opt.disabled ? "segmented-option-disabled" : ""}`}
+          onClick={() => onChange(opt.value)}
+          className={`segmented-option flex-1 ${value === opt.value ? "segmented-option-active" : ""}`}
         >
           {opt.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+function RuleToggle({
+  label,
+  ruleName,
+  checked,
+  onChange,
+}: {
+  label: string;
+  ruleName: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  const labelId = `rule-toggle-${ruleName}`;
+
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+      <div className="min-w-0">
+        <span className="block text-[13px] text-text-primary" id={labelId}>
+          {label}
+        </span>
+        <span className="block text-[11px] text-text-tertiary">
+          {ruleName}
+        </span>
+      </div>
+      <button
+        onClick={() => onChange(!checked)}
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={labelId}
+        className={`relative w-9 h-[20px] rounded-full transition-colors duration-200 shrink-0 ${
+          checked ? "bg-accent" : "bg-border"
+        }`}
+        type="button"
+      >
+        <span
+          className={`absolute top-[2px] left-[2px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+            checked ? "translate-x-4" : ""
+          }`}
+        />
+      </button>
     </div>
   );
 }

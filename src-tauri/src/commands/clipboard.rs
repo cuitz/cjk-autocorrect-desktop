@@ -43,10 +43,7 @@ pub async fn format_clipboard(app: tauri::AppHandle) -> Result<(), AppError> {
     }
 
     let service = FormatterService::new();
-    let request = crate::dto::FormatTextDto {
-        text,
-        mode: Some("standard".to_string()),
-    };
+    let request = crate::dto::FormatTextDto { text };
     let result: FormatResultDto = service.format(request)?;
 
     clipboard

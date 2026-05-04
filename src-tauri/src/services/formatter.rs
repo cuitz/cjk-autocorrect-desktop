@@ -1,6 +1,6 @@
 use crate::dto::{FormatResultDto, FormatTextDto};
 use crate::engine::embedded_autocorrect::EmbeddedAutocorrectEngine;
-use crate::engine::types::FormatterEngine;
+use crate::engine::types::{FormatRequest, FormatterEngine};
 use crate::errors::AppError;
 
 pub struct FormatterService {
@@ -28,7 +28,9 @@ impl FormatterService {
     }
 
     pub fn format(&self, request: FormatTextDto) -> Result<FormatResultDto, AppError> {
-        let format_request = request.into();
+        let mut format_request: FormatRequest = request.into();
+        let config = crate::config::app_config::AppConfig::load().unwrap_or_default();
+        format_request.formatter = config.formatter;
         let response = self.autocorrect.format(&format_request)?;
         Ok(FormatResultDto::from(response))
     }

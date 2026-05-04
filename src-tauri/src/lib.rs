@@ -60,7 +60,8 @@ pub(crate) fn tray_labels_for_language(lang: &LanguageMode) -> TrayLabels {
 fn build_tray_menu(app: &tauri::AppHandle, lang: &LanguageMode) -> tauri::Result<Menu<tauri::Wry>> {
     let labels = tray_labels_for_language(lang);
     let show_item = MenuItem::with_id(app, TRAY_MENU_SHOW, labels.show, true, None::<&str>)?;
-    let settings_item = MenuItem::with_id(app, TRAY_MENU_SETTINGS, labels.settings, true, None::<&str>)?;
+    let settings_item =
+        MenuItem::with_id(app, TRAY_MENU_SETTINGS, labels.settings, true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, TRAY_MENU_QUIT, labels.quit, true, None::<&str>)?;
     Menu::with_items(app, &[&show_item, &settings_item, &quit_item])
 }
@@ -129,10 +130,10 @@ pub fn run() {
             app.manage(AppRuntimeState::new(app_config.close_to_tray));
 
             {
-                use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
-                use tauri_plugin_clipboard_manager::ClipboardExt;
-                use crate::services::formatter::FormatterService;
                 use crate::commands::clipboard::ClipboardFormatEvent;
+                use crate::services::formatter::FormatterService;
+                use tauri_plugin_clipboard_manager::ClipboardExt;
+                use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
                 let gs = app.global_shortcut();
                 gs.on_shortcut(shortcut_str.as_str(), move |app, _shortcut, event| {
@@ -142,17 +143,17 @@ pub fn run() {
                             if !text.trim().is_empty() {
                                 let original = text.clone();
                                 let service = FormatterService::new();
-                                let request = crate::dto::FormatTextDto {
-                                    text,
-                                    mode: Some("standard".to_string()),
-                                };
+                                let request = crate::dto::FormatTextDto { text };
                                 if let Ok(result) = service.format(request) {
                                     let _ = app.clipboard().write_text(&result.formatted_text);
-                                    let _ = app.emit("clipboard-formatted", ClipboardFormatEvent {
-                                        original_text: original,
-                                        formatted_text: result.formatted_text,
-                                        changed: result.changed,
-                                    });
+                                    let _ = app.emit(
+                                        "clipboard-formatted",
+                                        ClipboardFormatEvent {
+                                            original_text: original,
+                                            formatted_text: result.formatted_text,
+                                            changed: result.changed,
+                                        },
+                                    );
                                 }
                             }
                         }
