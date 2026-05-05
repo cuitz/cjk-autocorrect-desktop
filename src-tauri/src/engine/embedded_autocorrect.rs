@@ -8,6 +8,22 @@ use crate::errors::AppError;
 use autocorrect::config::SeverityMode;
 
 static AUTOCORRECT_CONFIG_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+static SPELLCHECK_WORDS_LOADED: OnceLock<()> = OnceLock::new();
+
+const BUILT_IN_SPELLCHECK_WORDS: &[&str] = &[
+    "api = API",
+    "css = CSS",
+    "github = GitHub",
+    "html = HTML",
+    "ios = iOS",
+    "ipad = iPad",
+    "iphone = iPhone",
+    "javascript = JavaScript",
+    "macos = macOS",
+    "typescript = TypeScript",
+    "url = URL",
+    "wifi = Wi-Fi",
+];
 
 /// Embedded AutoCorrect engine backed by the upstream Rust crate.
 pub struct EmbeddedAutocorrectEngine;
@@ -51,6 +67,8 @@ impl FormatterEngine for EmbeddedAutocorrectEngine {
 fn apply_autocorrect_config(
     formatter: &crate::config::app_config::FormatterConfig,
 ) -> Result<(), AppError> {
+    ensure_spellcheck_words_loaded()?;
+
     let rules = formatter
         .rules
         .autocorrect_rules()
@@ -69,6 +87,25 @@ fn apply_autocorrect_config(
 
     autocorrect::config::load(&config)
         .map_err(|e| AppError::ConfigError(format!("Failed to apply autocorrect rules: {}", e)))?;
+
+    Ok(())
+}
+
+fn ensure_spellcheck_words_loaded() -> Result<(), AppError> {
+    if SPELLCHECK_WORDS_LOADED.get().is_some() {
+        return Ok(());
+    }
+
+    let words = BUILT_IN_SPELLCHECK_WORDS
+        .iter()
+        .map(|word| format!("    - {word}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let config = format!("spellcheck:\n  words:\n{words}\n");
+
+    autocorrect::config::load(&config)
+        .map_err(|e| AppError::ConfigError(format!("Failed to load spellcheck words: {}", e)))?;
+    let _ = SPELLCHECK_WORDS_LOADED.set(());
 
     Ok(())
 }
@@ -227,15 +264,39 @@ mod tests {
                 true),
             "支持 Rust,Python,Go"
         );
+        assert_eq!(
+            format_with_rules("我们用Javascript开发", |rules| {
+                rules.spellcheck = true;
+                rules.space_word = true;
+            }),
+            "我们用 JavaScript 开发"
+        );
     }
 
     #[test]
-    fn test_spellcheck_rule_requires_word_list() {
-        // Upstream autocorrect only applies spellcheck replacements when a spellcheck
-        // dictionary is loaded. Our embedded config currently toggles the rule severity,
-        // but does not provide any built-in words, so the rule has no effect.
+    fn test_spellcheck_rule_uses_built_in_word_list() {
         assert_eq!(
             format_with_rules("开放 IOS 接口", |rules| rules.spellcheck = true),
+            "开放 iOS 接口"
+        );
+        assert_eq!(
+            format_with_rules("我们用 Javascript 和 github 开发", |rules| {
+                rules.spellcheck = true;
+                rules.space_word = true;
+            }),
+            "我们用 JavaScript 和 GitHub 开发"
+        );
+        assert_eq!(
+            format_with_rules("请访问 url 并打开 wifi", |rules| rules.spellcheck =
+                true),
+            "请访问 URL 并打开 Wi-Fi"
+        );
+    }
+
+    #[test]
+    fn test_spellcheck_rule_can_be_disabled() {
+        assert_eq!(
+            format_with_rules("开放 IOS 接口", |rules| rules.spellcheck = false),
             "开放 IOS 接口"
         );
     }
