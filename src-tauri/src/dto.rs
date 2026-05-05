@@ -93,7 +93,7 @@ pub struct AppConfigResponseDto {
     pub version: u32,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct FormatterConfigDto {
     #[serde(default)]
     pub rules: FormatterRulesDto,
@@ -125,14 +125,6 @@ pub struct FormatterRulesDto {
     pub no_space_fullwidth_quote: bool,
     #[serde(default)]
     pub spellcheck: bool,
-}
-
-impl Default for FormatterConfigDto {
-    fn default() -> Self {
-        Self {
-            rules: FormatterRulesDto::default(),
-        }
-    }
 }
 
 impl Default for FormatterRulesDto {

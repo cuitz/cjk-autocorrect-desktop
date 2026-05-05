@@ -21,7 +21,7 @@ pub enum LanguageMode {
     Ko,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FormatterConfig {
     #[serde(default = "default_engine_rules")]
     pub rules: FormatterRules,
@@ -102,14 +102,6 @@ impl FormatterRules {
             ("no-space-fullwidth-quote", self.no_space_fullwidth_quote),
             ("spellcheck", self.spellcheck),
         ]
-    }
-}
-
-impl Default for FormatterConfig {
-    fn default() -> Self {
-        Self {
-            rules: FormatterRules::default(),
-        }
     }
 }
 
