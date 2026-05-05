@@ -49,7 +49,7 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: CJK AutoCorrect Desktop ${{ github.ref_name }}
           releaseBody: |
-            Install the local `autocorrect` CLI before using the app.
+            The formatting engine is bundled with the app, so no external `autocorrect` CLI is required.
 
             See README for installation and usage details.
           releaseDraft: false
