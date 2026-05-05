@@ -78,10 +78,7 @@ mod tests {
     use super::*;
     use crate::config::app_config::{FormatterConfig, FormatterRules};
 
-    fn format_with_rules(
-        text: &str,
-        configure_rules: impl FnOnce(&mut FormatterRules),
-    ) -> String {
+    fn format_with_rules(text: &str, configure_rules: impl FnOnce(&mut FormatterRules)) -> String {
         let engine = EmbeddedAutocorrectEngine::new();
         let mut formatter = FormatterConfig {
             rules: FormatterRules {
@@ -197,7 +194,8 @@ mod tests {
             "你好，世界！"
         );
         assert_eq!(
-            format_with_rules("ＡＰＩ ２０２４", |rules| rules.halfwidth_word = true),
+            format_with_rules("ＡＰＩ ２０２４", |rules| rules.halfwidth_word =
+                true),
             "API 2024"
         );
         assert_eq!(
@@ -213,7 +211,8 @@ mod tests {
             "Said: Come and, Join us!"
         );
         assert_eq!(
-            format_with_rules("你好 ，世界 ！", |rules| rules.no_space_fullwidth = true),
+            format_with_rules("你好 ，世界 ！", |rules| rules.no_space_fullwidth =
+                true),
             "你好，世界！"
         );
         assert_eq!(
@@ -224,7 +223,8 @@ mod tests {
         );
 
         assert_eq!(
-            format_with_rules("支持 Rust,Python,Go", |rules| rules.space_punctuation = true),
+            format_with_rules("支持 Rust,Python,Go", |rules| rules.space_punctuation =
+                true),
             "支持 Rust,Python,Go"
         );
     }
