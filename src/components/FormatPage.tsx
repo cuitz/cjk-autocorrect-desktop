@@ -2,7 +2,7 @@ import { useFormatStore } from "../stores/format";
 import { useEngineStore } from "../stores/engine";
 import { useConfigStore } from "../stores/config";
 import { readClipboard, writeClipboard } from "../lib/commands";
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import appIcon from "../../src-tauri/icons/128x128.png";
 import { useI18n } from "../i18n";
 import { diffChars } from "../lib/diff";
@@ -27,6 +27,8 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
   const { config } = useConfigStore();
   const { t } = useI18n();
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [actionToast, setActionToast] = useState<string | null>(null);
 
   const diffSegments = useMemo(() => {
     if (!result || !result.changed || !config?.diff_highlight) return null;
@@ -48,10 +50,23 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  const showActionToast = (message: string) => {
+    setActionToast(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setActionToast(null), 2000);
+  };
+
   const handlePaste = async () => {
     try {
       const text = await readClipboard();
       setInputText(text);
+      showActionToast(t("format.pasteSuccess"));
     } catch {
       setInputText(t("format.pasteError"));
     }
@@ -61,19 +76,31 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
     if (!result?.formatted_text) return;
     try {
       await writeClipboard(result.formatted_text);
+      showActionToast(t("format.copySuccess"));
     } catch {
       // Silently fail
     }
   };
 
-  const handleFormat = () => {
-    format();
+  const handleFormat = async () => {
+    await format();
+    const { error, result } = useFormatStore.getState();
+    if (error || !result) return;
+    showActionToast(result.changed ? t("format.formatSuccess") : t("format.formatNoChangeToast"));
+  };
+
+  const handleClear = () => {
+    const hasContent = inputText.length > 0 || !!result;
+    clear();
+    if (hasContent) {
+      showActionToast(t("format.clearSuccess"));
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
-      format();
+      void handleFormat();
     }
   };
 
@@ -101,7 +128,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
             {t("format.paste")}
           </button>
           <button
-            onClick={handleFormat}
+            onClick={() => void handleFormat()}
             disabled={isFormatting || !inputText.trim()}
             className="tool-button tool-button-primary"
             aria-label={isFormatting ? t("format.formatting") : t("format.format")}
@@ -123,7 +150,7 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
             {t("format.copy")}
           </button>
           <button
-            onClick={clear}
+            onClick={handleClear}
             className="tool-button"
             aria-label={t("format.clear")}
           >
@@ -255,6 +282,12 @@ export function FormatPage({ onNavigate }: FormatPageProps) {
           >
             &#x2715;
           </button>
+        </div>
+      )}
+
+      {actionToast && !toastError && (
+        <div className="toast toast-success" role="status">
+          {actionToast}
         </div>
       )}
 

@@ -169,12 +169,16 @@ mod tests {
             "hello 你好"
         );
         assert_eq!(
+            format_with_rules("今天Version2发布", |rules| rules.space_word = true),
+            "今天 Version2 发布"
+        );
+        assert_eq!(
             format_with_rules("中文+中文", |rules| rules.space_punctuation = true),
             "中文 + 中文"
         );
         assert_eq!(
-            format_with_rules("你好(世界)", |rules| rules.space_bracket = true),
-            "你好 (世界)"
+            format_with_rules("请参考API(v2)文档", |rules| rules.space_bracket = true),
+            "请参考API(v2) 文档"
         );
         assert_eq!(
             format_with_rules("你好-世界", |rules| rules.space_dash = true),
@@ -197,6 +201,12 @@ mod tests {
             "API 2024"
         );
         assert_eq!(
+            format_with_rules("型号Ａ１２３升级到Ｂ２", |rules| {
+                rules.halfwidth_word = true
+            }),
+            "型号A123升级到B2"
+        );
+        assert_eq!(
             format_with_rules("Said：Come and，Join us！", |rules| {
                 rules.halfwidth_punctuation = true
             }),
@@ -211,6 +221,11 @@ mod tests {
                 rules.no_space_fullwidth_quote = true
             }),
             "你好“Quote”世界"
+        );
+
+        assert_eq!(
+            format_with_rules("支持 Rust,Python,Go", |rules| rules.space_punctuation = true),
+            "支持 Rust,Python,Go"
         );
     }
 
