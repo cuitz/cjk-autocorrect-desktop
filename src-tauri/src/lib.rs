@@ -14,7 +14,7 @@ use state::AppRuntimeState;
 use std::sync::atomic::Ordering;
 use tauri::{
     menu::{Menu, MenuItem},
-    tray::TrayIconBuilder,
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager,
 };
 
@@ -94,6 +94,7 @@ pub fn run() {
             let _tray = TrayIconBuilder::with_id("main-tray")
                 .icon(app.default_window_icon().cloned().unwrap())
                 .menu(&menu)
+                .show_menu_on_left_click(false)
                 .tooltip("CJK AutoCorrect")
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "show" => {
@@ -115,7 +116,12 @@ pub fn run() {
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let tauri::tray::TrayIconEvent::Click { .. } = event {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
                         let app = tray.app_handle();
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
