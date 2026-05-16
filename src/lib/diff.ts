@@ -36,11 +36,14 @@ function hirschberg(a: string[], b: string[]): RawOp[] {
   const L1 = lcsRow(a.slice(0, amid), b);        // forward from top-left
   const L2 = lcsRowRev(a.slice(amid), b);         // reverse from bottom-right
 
-  // bmid = k that maximizes L1[k] + L2[m - k]
+  // bmid = k that maximizes L1[k] + L2[k].
+  // L1[k] is LCS(a[0..amid), b[0..k)); lcsRowRev produces L2[k] as
+  // LCS(a[amid..n), b[k..m)) — both sides already align on the same k,
+  // so the join point is L1[k] + L2[k] (not L2[m-k]).
   let best = -1;
   let bmid = 0;
   for (let k = 0; k <= m; k++) {
-    const val = L1[k] + L2[m - k];
+    const val = L1[k] + L2[k];
     if (val > best) {
       best = val;
       bmid = k;
@@ -136,7 +139,33 @@ function lcsFull(a: string[], b: string[]): RawOp[] {
 
 // ── Merge raw ops into DiffSegments ──
 
-function mergeOps(raw: RawOp[], newChars: string[]): DiffSegment[] {
+// Normalize so that within any non-equal run, removes always come before adds.
+// Hirschberg's recursive joins can produce [add, remove] sequences that would
+// otherwise prevent mergeOps from collapsing them into a single "change" block.
+function normalizeOrder(raw: RawOp[]): RawOp[] {
+  const out: RawOp[] = [];
+  let i = 0;
+  while (i < raw.length) {
+    if (raw[i] === 0) {
+      out.push(0);
+      i++;
+      continue;
+    }
+    let removes = 0;
+    let adds = 0;
+    while (i < raw.length && raw[i] !== 0) {
+      if (raw[i] === 1) adds++;
+      else removes++;
+      i++;
+    }
+    for (let r = 0; r < removes; r++) out.push(-1);
+    for (let a = 0; a < adds; a++) out.push(1);
+  }
+  return out;
+}
+
+function mergeOps(rawIn: RawOp[], newChars: string[]): DiffSegment[] {
+  const raw = normalizeOrder(rawIn);
   const segments: DiffSegment[] = [];
   let i = 0;
   let newIdx = 0;
@@ -158,9 +187,7 @@ function mergeOps(raw: RawOp[], newChars: string[]): DiffSegment[] {
       segments.push({ type: "add", text: buf.join("") });
     } else {
       // Remove — may precede an add → merge into "change"
-      let rCount = 0;
       while (i < raw.length && raw[i] === -1) {
-        rCount++;
         i++;
       }
       let aCount = 0;
