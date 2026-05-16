@@ -92,7 +92,11 @@ pub fn run() {
             let menu = build_tray_menu(&app_handle, &app_config.language)?;
 
             let _tray = TrayIconBuilder::with_id("main-tray")
-                .icon(app.default_window_icon().cloned().unwrap())
+                .icon(
+                    app.default_window_icon()
+                        .cloned()
+                        .expect("default window icon must be configured in tauri.conf.json"),
+                )
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .tooltip("CJK AutoCorrect")
@@ -136,39 +140,13 @@ pub fn run() {
             app.manage(AppRuntimeState::new(app_config.close_to_tray));
 
             {
-                use crate::commands::clipboard::ClipboardFormatEvent;
-                use crate::services::formatter::FormatterService;
-                use tauri_plugin_clipboard_manager::ClipboardExt;
+                use crate::commands::clipboard::on_global_shortcut_pressed;
                 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
                 let gs = app.global_shortcut();
                 gs.on_shortcut(shortcut_str.as_str(), move |app, _shortcut, event| {
                     if event.state == ShortcutState::Pressed {
-                        // Format clipboard content
-                        if let Ok(text) = app.clipboard().read_text() {
-                            if !text.trim().is_empty() {
-                                let original = text.clone();
-                                let service = FormatterService::new();
-                                let request = crate::dto::FormatTextDto { text };
-                                if let Ok(result) = service.format(request) {
-                                    let _ = app.clipboard().write_text(&result.formatted_text);
-                                    let _ = app.emit(
-                                        "clipboard-formatted",
-                                        ClipboardFormatEvent {
-                                            original_text: original,
-                                            formatted_text: result.formatted_text,
-                                            changed: result.changed,
-                                        },
-                                    );
-                                }
-                            }
-                        }
-
-                        // Show and focus main window
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+                        on_global_shortcut_pressed(app);
                     }
                 })?;
             }

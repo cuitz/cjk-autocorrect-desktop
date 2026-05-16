@@ -1,4 +1,4 @@
-use tauri::{Emitter, Manager};
+use tauri::Manager;
 
 use crate::config::app_config::AppConfig;
 use crate::dto::{AppConfigDto, AppConfigResponseDto};
@@ -31,9 +31,7 @@ pub async fn save_config(app: tauri::AppHandle, config: AppConfigDto) -> Result<
 
     // 2. Re-register global shortcut
     {
-        use crate::commands::clipboard::ClipboardFormatEvent;
-        use crate::services::formatter::FormatterService;
-        use tauri_plugin_clipboard_manager::ClipboardExt;
+        use crate::commands::clipboard::on_global_shortcut_pressed;
         use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
         let gs = app.global_shortcut();
@@ -48,63 +46,21 @@ pub async fn save_config(app: tauri::AppHandle, config: AppConfigDto) -> Result<
             let register_result =
                 gs.on_shortcut(shortcut_str.as_str(), move |app, _shortcut, event| {
                     if event.state == ShortcutState::Pressed {
-                        if let Ok(text) = app.clipboard().read_text() {
-                            if !text.trim().is_empty() {
-                                let original = text.clone();
-                                let service = FormatterService::new();
-                                let request = crate::dto::FormatTextDto { text };
-                                if let Ok(result) = service.format(request) {
-                                    let _ = app.clipboard().write_text(&result.formatted_text);
-                                    let _ = app.emit(
-                                        "clipboard-formatted",
-                                        ClipboardFormatEvent {
-                                            original_text: original,
-                                            formatted_text: result.formatted_text,
-                                            changed: result.changed,
-                                        },
-                                    );
-                                }
-                            }
-                        }
-
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+                        on_global_shortcut_pressed(app);
                     }
                 });
 
             if let Err(e) = register_result {
+                // New shortcut failed to register — try to restore the previous one.
                 if previous_shortcut != shortcut_str && previous_was_registered {
-                    let _ =
-                        gs.on_shortcut(previous_shortcut.as_str(), move |app, _shortcut, event| {
+                    let _ = gs.on_shortcut(
+                        previous_shortcut.as_str(),
+                        move |app, _shortcut, event| {
                             if event.state == ShortcutState::Pressed {
-                                if let Ok(text) = app.clipboard().read_text() {
-                                    if !text.trim().is_empty() {
-                                        let original = text.clone();
-                                        let service = FormatterService::new();
-                                        let request = crate::dto::FormatTextDto { text };
-                                        if let Ok(result) = service.format(request) {
-                                            let _ =
-                                                app.clipboard().write_text(&result.formatted_text);
-                                            let _ = app.emit(
-                                                "clipboard-formatted",
-                                                ClipboardFormatEvent {
-                                                    original_text: original,
-                                                    formatted_text: result.formatted_text,
-                                                    changed: result.changed,
-                                                },
-                                            );
-                                        }
-                                    }
-                                }
-
-                                if let Some(window) = app.get_webview_window("main") {
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                }
+                                on_global_shortcut_pressed(app);
                             }
-                        });
+                        },
+                    );
                 }
 
                 return Err(AppError::ShortcutRegistrationError(e.to_string()));

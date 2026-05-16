@@ -17,7 +17,8 @@ export const useEngineStore = create<EngineState>((set) => ({
     try {
       const status = await checkEngine();
       set({ status, loading: false });
-    } catch {
+    } catch (err) {
+      console.warn("checkEngine failed", err);
       set({ loading: false });
     }
   },

@@ -152,7 +152,7 @@ impl From<AppConfig> for AppConfigResponseDto {
             shortcut: config.shortcut,
             auto_start: config.auto_start,
             close_to_tray: config.close_to_tray,
-            theme: format!("{:?}", config.theme).to_lowercase(),
+            theme: theme_to_string(&config.theme),
             language: language_to_string(&config.language),
             history_enabled: config.history_enabled,
             history_limit: config.history_limit,
@@ -263,6 +263,15 @@ fn language_to_string(language: &LanguageMode) -> String {
         LanguageMode::En => "en",
         LanguageMode::Ja => "ja",
         LanguageMode::Ko => "ko",
+    }
+    .to_string()
+}
+
+fn theme_to_string(theme: &ThemeMode) -> String {
+    match theme {
+        ThemeMode::System => "system",
+        ThemeMode::Light => "light",
+        ThemeMode::Dark => "dark",
     }
     .to_string()
 }

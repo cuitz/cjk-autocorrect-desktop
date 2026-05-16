@@ -505,11 +505,14 @@ function ShortcutInput({
   onStopRecord: () => void;
   onChange: (shortcut: string) => void;
 }) {
-  // Use refs to hold latest callbacks without re-triggering useEffect
+  // Use refs to hold latest callbacks without re-triggering useEffect.
+  // Updated in a passive effect so we don't write during render.
   const onChangeRef = useRef(onChange);
   const onStopRecordRef = useRef(onStopRecord);
-  onChangeRef.current = onChange;
-  onStopRecordRef.current = onStopRecord;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    onStopRecordRef.current = onStopRecord;
+  });
 
   // Use window-level keydown listener to reliably capture modifier keys
   useEffect(() => {

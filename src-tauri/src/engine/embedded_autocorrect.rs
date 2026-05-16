@@ -9,6 +9,9 @@ use autocorrect::config::SeverityMode;
 
 static AUTOCORRECT_CONFIG_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 static SPELLCHECK_WORDS_LOADED: OnceLock<()> = OnceLock::new();
+/// Caches the last applied rule signature so repeat calls with identical rules
+/// skip the YAML serialise + parse round-trip inside `autocorrect::config::load`.
+static LAST_APPLIED_RULES: OnceLock<Mutex<Option<u64>>> = OnceLock::new();
 
 const BUILT_IN_SPELLCHECK_WORDS: &[&str] = &[
     "api = API",
@@ -69,6 +72,15 @@ fn apply_autocorrect_config(
 ) -> Result<(), AppError> {
     ensure_spellcheck_words_loaded()?;
 
+    let signature = rules_signature(&formatter.rules);
+    let cache = LAST_APPLIED_RULES.get_or_init(|| Mutex::new(None));
+    let mut guard = cache
+        .lock()
+        .map_err(|e| AppError::FormatFailed(format!("Rules cache lock poisoned: {}", e)))?;
+    if *guard == Some(signature) {
+        return Ok(());
+    }
+
     let rules = formatter
         .rules
         .autocorrect_rules()
@@ -88,7 +100,19 @@ fn apply_autocorrect_config(
     autocorrect::config::load(&config)
         .map_err(|e| AppError::ConfigError(format!("Failed to apply autocorrect rules: {}", e)))?;
 
+    *guard = Some(signature);
     Ok(())
+}
+
+/// Compact 64-bit signature of the 12 rule toggles. Stable across runs.
+fn rules_signature(rules: &crate::config::app_config::FormatterRules) -> u64 {
+    let mut bits: u64 = 0;
+    for (idx, (_, enabled)) in rules.autocorrect_rules().iter().enumerate() {
+        if *enabled {
+            bits |= 1 << idx;
+        }
+    }
+    bits
 }
 
 fn ensure_spellcheck_words_loaded() -> Result<(), AppError> {

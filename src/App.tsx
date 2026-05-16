@@ -59,6 +59,13 @@ function App() {
     document.documentElement.lang = resolveLocale(config?.language);
   }, [config?.language]);
 
+  const tCallbackRef = useRef(t);
+  const populateFromClipboardRef = useRef(populateFromClipboard);
+  useEffect(() => {
+    tCallbackRef.current = t;
+    populateFromClipboardRef.current = populateFromClipboard;
+  });
+
   useEffect(() => {
     const unlisten = listen<{
       original_text: string;
@@ -66,10 +73,10 @@ function App() {
       changed: boolean;
     }>("clipboard-formatted", (event) => {
       const { original_text, formatted_text, changed } = event.payload;
-      populateFromClipboard(original_text, formatted_text, changed);
+      populateFromClipboardRef.current(original_text, formatted_text, changed);
       const msg = changed
-        ? t("format.clipboardChanged")
-        : t("format.clipboardNoChange");
+        ? tCallbackRef.current("format.clipboardChanged")
+        : tCallbackRef.current("format.clipboardNoChange");
       setClipboardToast(msg);
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       toastTimerRef.current = setTimeout(() => setClipboardToast(null), 2000);
@@ -79,7 +86,7 @@ function App() {
       unlisten.then((fn) => fn());
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
-  }, [t, populateFromClipboard]);
+  }, []);
 
   useEffect(() => {
     const unlisten = listen<string>("navigate", (event) => {
