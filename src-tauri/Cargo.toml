@@ -1,6 +1,6 @@
 [package]
 name = "cjk-autocorrect-desktop"
-version = "0.1.2"
+version = "0.1.3"
 description = "CJK AutoCorrect Desktop - CJK text formatting tool"
 authors = ["cuitz"]
 edition = "2021"
